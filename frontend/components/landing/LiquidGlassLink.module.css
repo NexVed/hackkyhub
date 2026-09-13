@@ -1,0 +1,114 @@
+.root {
+  position: relative;
+  display: inline-grid;
+  width: 9.25rem;
+  height: 3rem;
+  place-items: center;
+  border-radius: 999px;
+  isolation: isolate;
+  transition: transform 260ms ease, filter 260ms ease;
+}
+
+.root:hover {
+  transform: translateY(-2px);
+  filter: drop-shadow(0 12px 25px rgb(127 174 255 / 20%));
+}
+
+.fallback,
+.host,
+.link {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.fallback {
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 28%);
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 22%), rgb(255 255 255 / 5%) 45%, rgb(102 140 255 / 14%)),
+    rgb(6 8 13 / 58%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 28%), 0 12px 38px rgb(0 0 0 / 35%);
+  backdrop-filter: blur(16px) saturate(140%);
+  transition: opacity 240ms ease;
+}
+
+.root[data-ready="true"] .fallback {
+  background: transparent;
+}
+
+.host {
+  z-index: 1;
+  display: grid;
+  overflow: hidden;
+  place-items: center;
+}
+
+.host :global(.glass-button) {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  cursor: pointer;
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 30%);
+  background: linear-gradient(135deg, rgb(255 255 255 / 13%), rgb(91 129 255 / 8%));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 32%), 0 14px 40px rgb(0 0 0 / 40%) !important;
+}
+
+.host :global(.glass-button canvas) {
+  z-index: 0 !important;
+}
+
+.host :global(.glass-button-text) {
+  opacity: 0;
+}
+
+.link {
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 8px rgb(0 0 0 / 70%);
+  outline: none;
+}
+
+.icon {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 30%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 90%);
+  color: #050505;
+  text-shadow: none;
+  transition: transform 220ms ease;
+}
+
+.root:hover .icon {
+  transform: translate(2px, -2px);
+}
+
+.link:focus-visible {
+  box-shadow: 0 0 0 2px #050505, 0 0 0 4px rgb(147 197 253 / 95%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    transition: none;
+  }
+}

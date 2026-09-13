@@ -2,10 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any
 import requests
 from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
+from playwright.sync_api import sync_playwright
 import logging
 from datetime import datetime
 
@@ -31,16 +28,19 @@ class BaseScraper(ABC):
             logger.error(f"Error fetching {url}: {str(e)}")
             return None
     
-    def get_driver(self):
-        """Get Selenium WebDriver for JavaScript-rendered pages"""
-        chrome_options = Options()
-        if self.headless:
-            chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        
-        service = Service(ChromeDriverManager().install())
-        return webdriver.Chrome(service=service, options=chrome_options)
+    def get_rendered_content(self, url: str) -> Optional[str]:
+        """Get rendered HTML of a JavaScript-dependent page using Playwright"""
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=self.headless)
+                page = browser.new_page()
+                page.goto(url, wait_until='networkidle', timeout=30000)
+                html = page.content()
+                browser.close()
+                return html
+        except Exception as e:
+            logger.error(f"Error rendering {url}: {str(e)}")
+            return None
     
     @abstractmethod
     def can_handle(self, url: str) -> bool:

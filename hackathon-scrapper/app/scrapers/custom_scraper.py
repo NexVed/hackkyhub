@@ -23,14 +23,11 @@ class CustomScraper(BaseScraper):
         # Try with requests first
         soup = self.get_soup(url)
         
-        # If content is dynamic, use Selenium
+        # If content is dynamic, use Playwright
         if soup and self._needs_javascript(soup):
-            driver = self.get_driver()
-            try:
-                driver.get(url)
-                soup = BeautifulSoup(driver.page_source, 'lxml')
-            finally:
-                driver.quit()
+            html = self.get_rendered_content(url)
+            if html:
+                soup = BeautifulSoup(html, 'lxml')
         
         if not soup:
             return {"error": "Failed to fetch page"}
