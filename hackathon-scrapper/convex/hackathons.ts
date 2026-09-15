@@ -4,6 +4,17 @@ import { v } from "convex/values";
 // Create a new hackathon
 export const create = mutation({
     args: {
+    slug: v.optional(v.string()),
+    banner_url: v.optional(v.string()),
+    logo_url: v.optional(v.string()),
+    platform_logo: v.optional(v.string()),
+    redirect_url: v.optional(v.string()),
+    prize_amount: v.optional(v.number()),
+    prize_currency: v.optional(v.string()),
+    registration_deadline: v.optional(v.string()),
+    is_mnc: v.optional(v.boolean()),
+    registered_count: v.optional(v.number()),
+    view_count: v.optional(v.number()),
         name: v.string(),
         description: v.optional(v.string()),
         url: v.string(),
@@ -26,7 +37,11 @@ export const create = mutation({
             .first();
 
         if (existing) {
-            return null; // Already exists
+            await ctx.db.patch(existing._id, {
+                ...args,
+                updated_at: new Date().toISOString(),
+            });
+            return await ctx.db.get(existing._id);
         }
 
         const now = new Date().toISOString();
@@ -68,7 +83,10 @@ export const getAll = query({
     handler: async (ctx, args) => {
         let q;
 
-        if (args.platform) {
+        if (args.platform && args.status) {
+            q = ctx.db.query("hackathons").withIndex("by_platform_and_status", (qb) =>
+                qb.eq("platform", args.platform!).eq("status", args.status!));
+        } else if (args.platform) {
             q = ctx.db
                 .query("hackathons")
                 .withIndex("by_platform", (qb) => qb.eq("platform", args.platform!));
@@ -80,17 +98,7 @@ export const getAll = query({
             q = ctx.db.query("hackathons");
         }
 
-        const results = await q.collect();
-
-        // Apply additional filters if both platform and status are specified
-        let filtered = results;
-        if (args.platform && args.status) {
-            filtered = results.filter((h) => h.status === args.status);
-        }
-
-        // Apply limit
-        const limit = args.limit ?? 100;
-        return filtered.slice(0, limit);
+        return await q.take(Math.min(10000, Math.max(1, Math.floor(args.limit ?? 100))));
     },
 });
 
@@ -98,6 +106,17 @@ export const getAll = query({
 export const update = mutation({
     args: {
         id: v.id("hackathons"),
+    slug: v.optional(v.string()),
+    banner_url: v.optional(v.string()),
+    logo_url: v.optional(v.string()),
+    platform_logo: v.optional(v.string()),
+    redirect_url: v.optional(v.string()),
+    prize_amount: v.optional(v.number()),
+    prize_currency: v.optional(v.string()),
+    registration_deadline: v.optional(v.string()),
+    is_mnc: v.optional(v.boolean()),
+    registered_count: v.optional(v.number()),
+    view_count: v.optional(v.number()),
         name: v.optional(v.string()),
         description: v.optional(v.string()),
         url: v.optional(v.string()),
@@ -178,3 +197,14 @@ export const count = query({
     },
 });
 
+
+// Uses the corporate flag index, never a full table scan.
+export const getMNC = query({
+    args: { limit: v.optional(v.number()) },
+    handler: async (ctx, args) => {
+        return await ctx.db.query("hackathons")
+            .withIndex("by_is_mnc", (q) => q.eq("is_mnc", true))
+            .order("desc")
+            .take(Math.min(1000, Math.max(1, Math.floor(args.limit ?? 100))));
+    },
+});

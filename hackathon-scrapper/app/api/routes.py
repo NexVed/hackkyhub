@@ -9,7 +9,7 @@ from app.database.crud import HackathonCRUD
 from app.models.hackathon import (
     ScrapeRequest, ScrapeResponse, HackathonUpdate, ScrapeResult
 )
-from app.scrapers import scrape_url, scrape_url_all, PLATFORM_URLS
+from app.scrapers import scrape_url, scrape_url_all, PLATFORM_URLS, ACTIVE_STATUSES
 from app.cache.redis_cache import (
     get_cached_hackathon_list, cache_hackathon_list,
     get_cached_hackathon, cache_hackathon,
@@ -59,7 +59,7 @@ async def scrape_hackathons(
 async def scrape_all_platforms(background_tasks: BackgroundTasks):
     """
     Scrape ALL registered hackathon platforms at once.
-    This triggers bulk scraping from Devpost, MLH, Unstop, Hack2Skill, and Devnovate.
+    This triggers bulk scraping from all nine registered providers.
     """
     task_id = str(uuid.uuid4())
 
@@ -80,7 +80,7 @@ async def scrape_all_platforms(background_tasks: BackgroundTasks):
     return ScrapeResponse(
         task_id=task_id,
         status="pending",
-        message=f"Started scraping {len(PLATFORM_URLS)} platforms: Devpost, MLH, Unstop, Hack2Skill, Devnovate",
+        message=f"Started scraping {len(PLATFORM_URLS)} platforms",
         total_urls=len(PLATFORM_URLS)
     )
 
@@ -110,22 +110,45 @@ async def get_hackathons(
     limit: int = Query(100, ge=1, le=1000),
     platform: Optional[str] = None,
     status: Optional[str] = None,
+    include_completed: bool = False,
 ):
     """
     Get all scraped hackathons with optional filters
     """
     # Try cache first
-    cached = get_cached_hackathon_list(platform or "", status or "")
+    cached = get_cached_hackathon_list(platform or "", status or "", skip, limit, include_completed)
     if cached is not None:
-        return cached[skip:skip + limit]
+        return cached
 
     # Cache miss — fetch from Convex
-    hackathons = HackathonCRUD.get_all_hackathons(
-        skip=skip, limit=limit, platform=platform, status=status
-    )
+    try:
+        hackathons = await asyncio.to_thread(
+            HackathonCRUD.get_all_hackathons,
+            skip=skip, limit=limit, platform=platform, status=status,
+        )
+        if not include_completed and not status:
+            hackathons = [h for h in hackathons if h.get("status") in ACTIVE_STATUSES]
+    except Exception:
+        logger.exception("Unable to load hackathons")
+        raise HTTPException(status_code=503, detail="Hackathon data is temporarily unavailable")
 
-    cache_hackathon_list(hackathons, platform or "", status or "")
+    cache_hackathon_list(hackathons, platform or "", status or "", skip, limit, include_completed)
     return hackathons
+
+
+@router.get("/hackathons/mnc")
+async def get_mnc_hackathons(
+    limit: int = Query(100, ge=1, le=1000),
+    include_completed: bool = False,
+):
+    try:
+        hackathons = await asyncio.to_thread(HackathonCRUD.get_mnc_hackathons, limit)
+        if not include_completed:
+            hackathons = [h for h in hackathons if h.get("status") in ACTIVE_STATUSES]
+        return hackathons
+    except Exception:
+        logger.exception("Unable to load corporate hackathons")
+        raise HTTPException(status_code=503, detail="Hackathon data is temporarily unavailable")
 
 
 @router.get("/hackathons/{hackathon_id}")
@@ -211,7 +234,7 @@ async def process_scraping(task_id: str, urls: List[str], force_refresh: bool):
                 )
 
                 if hackathon:
-                    invalidate_hackathon()
+                    invalidate_hackathon(hackathon_id=hackathon.get("_id"), url=hackathon.get("url"))
                     scraping_tasks[task_id]["results"].append({
                         "url": url,
                         "success": True,
@@ -253,17 +276,14 @@ async def process_scraping_all(task_id: str):
             # Scrape all hackathons from this platform (returns a list)
             results = await asyncio.to_thread(scrape_url_all, platform_url)
             logger.info(f"[scrape-all] Got {len(results)} hackathons from {platform_url}")
+            if not results:
+                raise RuntimeError("No events extracted; the listing may be empty or the provider unavailable")
 
             for hackathon_data in results:
                 try:
-                    # Check for duplicate by URL
-                    hack_url = hackathon_data.get("url", "")
-                    if hack_url:
-                        existing = HackathonCRUD.get_hackathon_by_url(hack_url)
-                        if existing:
-                            logger.debug(f"[scrape-all] Skipping duplicate: {hack_url}")
-                            continue
-
+                    if hackathon_data.get("status") not in ACTIVE_STATUSES:
+                        logger.info("[scrape-all] Skipping completed event: %s", hackathon_data.get("url"))
+                        continue
                     # Save to Convex
                     saved = HackathonCRUD.create_hackathon(
                         hackathon_data,

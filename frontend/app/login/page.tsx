@@ -16,16 +16,16 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
 
     return (
-        <div className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-8 bg-black overflow-hidden">
+        <div className="relative min-h-dvh w-full flex items-center justify-center px-3 py-4 sm:p-8 bg-black overflow-x-hidden overflow-y-auto">
             {/* Galaxy Background */}
             <div className="absolute inset-0 pointer-events-auto">
                 <Galaxy transparent={false} />
             </div>
 
             {/* Main Content Card */}
-            <div className="relative z-10 flex flex-col lg:flex-row bg-white rounded-3xl shadow-2xl overflow-hidden w-[95%] sm:w-full sm:max-w-md lg:max-w-5xl min-h-[600px] border-2 border-white/20">
+            <div className="relative z-10 flex w-full max-w-md flex-col overflow-hidden rounded-2xl border border-white/20 bg-white shadow-2xl sm:rounded-3xl lg:min-h-[600px] lg:max-w-5xl lg:flex-row">
                 {/* Banner Side */}
-                <div className="relative h-40 sm:h-64 w-full lg:h-auto lg:w-5/12 flex-shrink-0 bg-black">
+                <div className="relative h-28 w-full flex-shrink-0 bg-black sm:h-48 lg:h-auto lg:w-5/12">
                     <Image
                         src="/Banner2.png"
                         alt="HackkyHub Banner"
@@ -43,8 +43,8 @@ export default function LoginPage() {
                 </div>
 
                 {/* Form Side */}
-                <div className="flex flex-1 flex-col justify-center px-4 py-6 sm:px-6 sm:py-8 lg:px-16 xl:px-28">
-                    <div className="mx-auto w-full max-w-[18rem] sm:max-w-sm lg:max-w-sm xl:max-w-md">
+                <div className="flex flex-1 flex-col justify-center px-5 py-6 sm:px-8 sm:py-8 lg:px-16 xl:px-28">
+                    <div className="mx-auto w-full max-w-md">
                         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 mb-2">
                             Welcome Back
                         </h2>
@@ -88,19 +88,19 @@ export default function LoginPage() {
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div className="flex items-center space-x-2">
                                     <Checkbox id="remember" />
                                     <label
                                         htmlFor="remember"
-                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-gray-600"
+                                        className="text-xs font-medium leading-none text-gray-600 peer-disabled:cursor-not-allowed peer-disabled:opacity-70 sm:text-sm"
                                     >
                                         Remember me
                                     </label>
                                 </div>
                                 <Link
                                     href="/forgot-password"
-                                    className="text-sm font-medium text-black hover:underline"
+                                    className="text-xs font-medium text-black hover:underline sm:text-sm"
                                 >
                                     Forgot Password?
                                 </Link>
@@ -111,7 +111,7 @@ export default function LoginPage() {
                             </Button>
                         </form>
 
-                        <div className="mt-8">
+                        <div className="mt-6 sm:mt-8">
                             <div className="relative">
                                 <div className="absolute inset-0 flex items-center">
                                     <div className="w-full border-t border-gray-200" />
@@ -160,7 +160,7 @@ export default function LoginPage() {
                             </div>
                         </div>
 
-                        <p className="mt-8 text-center text-sm text-gray-600">
+                        <p className="mt-6 text-center text-sm text-gray-600 sm:mt-8">
                             Don&apos;t have an account?{" "}
                             <Link href="/signup" className="font-semibold text-black hover:underline" prefetch={false}>
                                 Sign Up

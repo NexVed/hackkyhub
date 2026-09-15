@@ -6,6 +6,7 @@ import os
 import logging
 
 from app.models.hackathon import HackathonCreate, HackathonUpdate
+from app.utils.normalization import normalize_record
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 load_dotenv(".env.local", override=True)
 load_dotenv(".env")
 
-# Convex client — initialized on startup
+# Convex client â€” initialized on startup
 _client: Optional[ConvexClient] = None
 
 
@@ -70,31 +71,11 @@ class HackathonCRUD:
         """Create a new hackathon entry"""
         client = HackathonCRUD._get_client()
         try:
-            data = {
-                "name": hackathon_data.get("name", "Unknown"),
-                "url": hackathon_data.get("url", ""),
-                "platform": hackathon_data.get("platform", "custom"),
-                "is_online": hackathon_data.get("is_online", False),
-                "status": hackathon_data.get("status", "upcoming"),
-                "scraped_from": scraped_from,
-            }
-
-            # Add optional fields
-            for field in ["description", "start_date", "end_date", "location",
-                          "prizes", "organizer"]:
-                value = hackathon_data.get(field)
-                if value is not None:
-                    if isinstance(value, datetime):
-                        data[field] = value.isoformat()
-                    else:
-                        data[field] = str(value)
-
-            themes = hackathon_data.get("themes")
-            if themes is not None:
-                if isinstance(themes, list):
-                    data["themes"] = [str(t) for t in themes]
-                else:
-                    data["themes"] = [str(themes)]
+            normalized = normalize_record(hackathon_data, scraped_from)
+            if "error" in normalized:
+                raise ValueError(normalized["error"])
+            data = HackathonCreate.model_validate(normalized).model_dump(exclude_none=True)
+            data["scraped_from"] = scraped_from
 
             result = client.mutation("hackathons:create", data)
             return result
@@ -149,7 +130,7 @@ class HackathonCRUD:
         """Get all hackathons with optional filters"""
         client = HackathonCRUD._get_client()
         try:
-            params: Dict[str, Any] = {"limit": limit}
+            params: Dict[str, Any] = {"limit": skip + limit}
             if platform:
                 params["platform"] = platform
             if status:
@@ -157,11 +138,16 @@ class HackathonCRUD:
 
             results = client.query("hackathons:getAll", params)
             if results and skip > 0:
-                results = results[skip:]
+                results = results[skip:skip + limit]
             return results or []
         except Exception as e:
             logger.error(f"Error fetching hackathons: {e}")
-            return []
+            raise
+
+    @staticmethod
+    def get_mnc_hackathons(limit: int = 100) -> List[Dict[str, Any]]:
+        # Let API callers distinguish an unavailable database from an empty list.
+        return HackathonCRUD._get_client().query("hackathons:getMNC", {"limit": limit})
 
     @staticmethod
     def delete_hackathon(hackathon_id: str) -> bool:

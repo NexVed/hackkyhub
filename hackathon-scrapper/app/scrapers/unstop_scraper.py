@@ -1,3 +1,7 @@
+from urllib.parse import urlsplit, urljoin
+from app.utils.normalization import belongs_to, parse_date, date_status, normalize_record
+from app.scrapers.metadata import entity_name
+from app.scrapers.custom_scraper import CustomScraper
 from typing import Dict, Any, Optional, List
 import re
 from datetime import datetime
@@ -18,10 +22,20 @@ class UnstopScraper(BaseScraper):
 
     def can_handle(self, url: str) -> bool:
         """Check if the URL is from Unstop."""
-        return "unstop.com" in url.lower()
+        return belongs_to(url, "unstop.com")
 
     def scrape(self, url: str) -> Dict[str, Any]:
         """Scrape a single hackathon from Unstop. Returns the first result from listing."""
+        if urlsplit(url).path.rstrip("/") not in ("/hackathons",):
+            # Match the requested event exactly; SPA detail shells often only contain a brand title.
+            target = urlsplit(url).path.rstrip("/")
+            for event in self._scrape_listing_page_all("https://unstop.com/hackathons"):
+                if urlsplit(event.get("url", "")).path.rstrip("/") == target:
+                    return normalize_record(event, url)
+            data = CustomScraper().scrape(url)
+            if "error" not in data:
+                data["platform"] = "unstop"
+            return normalize_record(data, url)
         logger.info(f"Scraping Unstop URL: {url}")
         results = self._scrape_listing_page_all(url)
         if results:
@@ -29,6 +43,8 @@ class UnstopScraper(BaseScraper):
         return {"error": "No hackathons found from Unstop API"}
 
     def _scrape_listing_page_all(self, url: str) -> List[Dict[str, Any]]:
+        if urlsplit(url).path.rstrip("/") not in ("/hackathons",):
+            return [self.scrape(url)]
         """Fetch ALL hackathons from Unstop's JSON API (multiple pages)."""
         all_hackathons = []
         page = 1
@@ -87,6 +103,8 @@ class UnstopScraper(BaseScraper):
 
     def _parse_api_item(self, item: Dict) -> Optional[Dict[str, Any]]:
         """Parse a single hackathon item from the Unstop API response."""
+        if not item.get("title") or not item.get("seo_url"):
+            return None
         try:
             # Name
             name = item.get("title", "Unknown Hackathon")
@@ -94,7 +112,7 @@ class UnstopScraper(BaseScraper):
             # URL
             url = item.get("seo_url", "")
             if url and not url.startswith("http"):
-                url = f"https://unstop.com{url}"
+                url = urljoin("https://unstop.com/", url)
 
             # Organization
             org = item.get("organisation", {})
@@ -102,9 +120,9 @@ class UnstopScraper(BaseScraper):
 
             # Dates
             regn = item.get("regnRequirements", {}) or {}
-            start_date = self._parse_iso_date(regn.get("start_regn_dt"))
+            start_date = self._parse_iso_date(item.get("start_date"))
             end_regn = self._parse_iso_date(regn.get("end_regn_dt"))
-            end_date = self._parse_iso_date(item.get("end_date")) or end_regn
+            end_date = self._parse_iso_date(item.get("end_date"))
 
             # Description (strip HTML)
             description = item.get("details", "")
@@ -154,11 +172,17 @@ class UnstopScraper(BaseScraper):
             if not description and (views or registered):
                 description = f"{registered} registered, {views} views"
 
-            return {
+            return normalize_record({
                 "name": name,
                 "description": description,
                 "url": url,
                 "platform": HackathonPlatform.UNSTOP,
+                "banner_url": item.get("banner_desktop") or item.get("banner_mobile") or item.get("banner"),
+                "logo_url": (org.get("logoUrl2") or org.get("logo")) if isinstance(org, dict) else None,
+                "registration_deadline": end_regn,
+                "prize_currency": "INR",
+                "registered_count": registered,
+                "view_count": views,
                 "start_date": start_date,
                 "end_date": end_date,
                 "location": location,
@@ -167,22 +191,14 @@ class UnstopScraper(BaseScraper):
                 "themes": themes[:10],
                 "organizer": organizer,
                 "status": status,
-            }
+            })
 
         except Exception as e:
             logger.error(f"Error parsing Unstop API item: {e}")
             return None
 
-    def _parse_iso_date(self, date_str: Optional[str]) -> Optional[datetime]:
-        """Parse ISO date string like '2026-03-06T18:00:00+05:30'."""
-        if not date_str:
-            return None
-        try:
-            # Strip timezone for simplicity
-            clean = re.sub(r'[+-]\d{2}:\d{2}$', '', date_str)
-            return datetime.fromisoformat(clean)
-        except (ValueError, TypeError):
-            return None
+    def _parse_iso_date(self, date_str):
+        return parse_date(date_str)
 
     def _determine_status_from_api(self, item: Dict, start_date, end_date) -> str:
         """Determine hackathon status from API data."""
@@ -197,15 +213,5 @@ class UnstopScraper(BaseScraper):
         # Fallback to date-based
         return self._determine_status(start_date, end_date)
 
-    def _determine_status(self, start_date, end_date) -> str:
-        """Determine status based on dates."""
-        now = datetime.now()
-        if not start_date:
-            return "upcoming"
-        if now < start_date:
-            return "upcoming"
-        if end_date and start_date <= now <= end_date:
-            return "ongoing"
-        if end_date and now > end_date:
-            return "completed"
-        return "upcoming"
+    def _determine_status(self, start_date, end_date):
+        return date_status(start_date, end_date)

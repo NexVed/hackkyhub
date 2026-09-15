@@ -87,7 +87,7 @@ def invalidate_pattern(prefix: str):
         return
     try:
         # Invalidate the list cache
-        client.delete("scraper:hackathons:list")
+        client.incr("scraper:hackathons:generation")
         logger.debug(f"Invalidated cache for prefix: {prefix}")
     except Exception as e:
         logger.debug(f"Cache invalidation error: {e}")
@@ -99,26 +99,30 @@ def invalidate_hackathon(hackathon_id: Optional[str] = None, url: Optional[str] 
     if not client:
         return
     try:
-        keys_to_delete = ["scraper:hackathons:list"]
+        client.incr("scraper:hackathons:generation")
+        keys_to_delete = []
         if hackathon_id:
             keys_to_delete.append(_make_key("hackathon", hackathon_id))
         if url:
             keys_to_delete.append(_make_key("hackathon_url", url))
-        client.delete(*keys_to_delete)
+        if keys_to_delete:
+            client.delete(*keys_to_delete)
     except Exception as e:
         logger.debug(f"Cache invalidation error: {e}")
 
 
 # Convenience functions for hackathon-specific caching
-def cache_hackathon_list(hackathons: list, platform: str = "", status: str = ""):
+def cache_hackathon_list(hackathons: list, platform: str = "", status: str = "", skip: int = 0, limit: int = 100, include_completed: bool = False):
     """Cache the hackathon list response"""
-    key = _make_key("hackathons", "list", platform, status)
+    generation = str(get_cached("scraper:hackathons:generation") or 0)
+    key = _make_key("hackathons", "list", generation, platform, status, str(skip), str(limit), str(include_completed))
     set_cached(key, hackathons, ttl=LIST_TTL)
 
 
-def get_cached_hackathon_list(platform: str = "", status: str = "") -> Optional[list]:
+def get_cached_hackathon_list(platform: str = "", status: str = "", skip: int = 0, limit: int = 100, include_completed: bool = False) -> Optional[list]:
     """Get cached hackathon list"""
-    key = _make_key("hackathons", "list", platform, status)
+    generation = str(get_cached("scraper:hackathons:generation") or 0)
+    key = _make_key("hackathons", "list", generation, platform, status, str(skip), str(limit), str(include_completed))
     return get_cached(key)
 
 

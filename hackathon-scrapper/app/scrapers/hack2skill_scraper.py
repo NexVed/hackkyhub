@@ -1,3 +1,7 @@
+from urllib.parse import urlsplit, urljoin
+from app.utils.normalization import belongs_to, parse_date, date_status, normalize_record
+from app.scrapers.metadata import entity_name
+from app.scrapers.custom_scraper import CustomScraper
 from typing import Dict, Any, Optional, List
 import re
 from datetime import datetime
@@ -17,9 +21,19 @@ class Hack2SkillScraper(BaseScraper):
     """Scraper for Hack2Skill hackathons — uses their public JSON API."""
 
     def can_handle(self, url: str) -> bool:
-        return "hack2skill" in url.lower()
+        return belongs_to(url, "hack2skill.com")
 
     def scrape(self, url: str) -> Dict[str, Any]:
+        if urlsplit(url).path.rstrip("/") not in ("/hackathons", "/hackathons-listing"):
+            # Match the requested event exactly; SPA detail shells often only contain a brand title.
+            target = urlsplit(url).path.rstrip("/")
+            for event in self._scrape_listing_page_all("https://vision.hack2skill.com/hackathons-listing"):
+                if urlsplit(event.get("url", "")).path.rstrip("/") == target:
+                    return normalize_record(event, url)
+            data = CustomScraper().scrape(url)
+            if "error" not in data:
+                data["platform"] = "hack2skill"
+            return normalize_record(data, url)
         logger.info(f"Scraping Hack2Skill URL: {url}")
         results = self._scrape_listing_page_all(url)
         if results:
@@ -27,6 +41,8 @@ class Hack2SkillScraper(BaseScraper):
         return {"error": "No hackathons found from Hack2Skill API"}
 
     def _scrape_listing_page_all(self, url: str) -> List[Dict[str, Any]]:
+        if urlsplit(url).path.rstrip("/") not in ("/hackathons", "/hackathons-listing"):
+            return [self.scrape(url)]
         """Fetch ALL hackathons from Hack2Skill's JSON API (multiple pages)."""
         all_hackathons = []
         page = 1
@@ -84,6 +100,8 @@ class Hack2SkillScraper(BaseScraper):
 
     def _parse_api_item(self, item: Dict) -> Optional[Dict[str, Any]]:
         """Parse a single hackathon from the Hack2Skill API response."""
+        if not item.get("title") or not item.get("eventUrl"):
+            return None
         try:
             title = item.get("title", "Unknown Hackathon")
 
@@ -92,8 +110,8 @@ class Hack2SkillScraper(BaseScraper):
             url = f"https://hack2skill.com/hackathons/{event_slug}" if event_slug else "https://hack2skill.com/hackathons"
 
             # Dates
-            start_date = self._parse_iso_date(item.get("registrationStart"))
-            end_date = self._parse_iso_date(item.get("registrationEnd"))
+            start_date = self._parse_iso_date(item.get("eventStart") or item.get("submissionStart"))
+            end_date = self._parse_iso_date(item.get("eventEnd") or item.get("submissionEnd"))
 
             # Mode → location
             mode = str(item.get("mode", "")).upper()
@@ -115,7 +133,7 @@ class Hack2SkillScraper(BaseScraper):
 
             # Ticket / fee
             ticket = item.get("ticket", "")
-            prizes = f"Entry: {ticket}" if ticket else ""
+            prizes = item.get("rewards") or item.get("prize") or ""
 
             # Description
             description = item.get("shortDescription", "") or item.get("description", "")
@@ -128,43 +146,30 @@ class Hack2SkillScraper(BaseScraper):
             # Status
             status = self._determine_status(start_date, end_date)
 
-            return {
+            return normalize_record({
                 "name": title,
                 "description": description,
                 "url": url,
                 "platform": HackathonPlatform.HACK2SKILL,
+                "banner_url": item.get("bannerImage") or item.get("mobileBanner") or item.get("thumbnail"),
+                "logo_url": item.get("iconImage"),
+                "registration_deadline": item.get("registrationEnd"),
                 "start_date": start_date,
                 "end_date": end_date,
                 "location": location,
                 "is_online": is_online,
                 "prizes": prizes,
-                "themes": [],
-                "organizer": "Hack2Skill",
+                "themes": [n for t in (item.get("categories") or item.get("themes") or []) if (n := entity_name(t))],
+                "organizer": entity_name(item.get("organizer")) or "Hack2Skill",
                 "status": status,
-            }
+            })
 
         except Exception as e:
             logger.error(f"Error parsing Hack2Skill API item: {e}")
             return None
 
-    def _parse_iso_date(self, date_str: Optional[str]) -> Optional[datetime]:
-        if not date_str:
-            return None
-        try:
-            clean = re.sub(r'[+-]\d{2}:\d{2}$', '', date_str)
-            clean = clean.replace('Z', '')
-            return datetime.fromisoformat(clean)
-        except (ValueError, TypeError):
-            return None
+    def _parse_iso_date(self, date_str):
+        return parse_date(date_str)
 
-    def _determine_status(self, start_date, end_date) -> str:
-        now = datetime.now()
-        if not start_date:
-            return "upcoming"
-        if now < start_date:
-            return "upcoming"
-        if end_date and start_date <= now <= end_date:
-            return "ongoing"
-        if end_date and now > end_date:
-            return "completed"
-        return "upcoming"
+    def _determine_status(self, start_date, end_date):
+        return date_status(start_date, end_date)

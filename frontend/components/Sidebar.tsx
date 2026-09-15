@@ -1,23 +1,85 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { Home, Trophy, Users, ChevronDown, Sun, Moon, LayoutDashboard, Settings, Folder, ChevronsLeft, Terminal, Code, Cpu, LogOut, User } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/lib/store';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { setIsCollapsed, toggleIsCollapsed, setIsTeamsOpen, toggleIsTeamsOpen, setActiveAction, setActiveNav } from '@/lib/store/sidebarSlice';
-
-interface SidebarProps {
-    defaultCollapsed?: boolean;
-}
 
 export function Sidebar() {
     const dispatch = useAppDispatch();
     const router = useRouter();
+    const pathname = usePathname();
     const { isCollapsed, isTeamsOpen, activeAction, activeNav } = useAppSelector((state) => state.sidebar);
+    const routeNav = pathname.startsWith('/dashboard/Profile') ? 'profile'
+        : pathname.startsWith('/dashboard/Settings') ? 'settings'
+            : pathname.startsWith('/dashboard/Teams') ? 'teams'
+                : pathname.startsWith('/dashboard/Find') ? 'find'
+                    : pathname.startsWith('/dashboard/MNC') ? 'hackathons'
+                        : pathname === '/dashboard' ? 'dashboard'
+                            : 'home';
+
+    const navigate = (nav: 'home' | 'hackathons' | 'find' | 'teams' | 'dashboard' | 'settings' | 'profile', path: string) => {
+        dispatch(setActiveNav(nav));
+        router.push(path);
+    };
 
     // Expanded State
     return (
-        <div className={`shrink-0 relative ${isCollapsed ? 'w-[68px]' : 'w-[260px]'} h-full flex flex-col rounded-r-2xl bg-white/20 dark:bg-black/30 backdrop-blur-2xl border-r border-white/40 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] text-slate-800 dark:text-slate-200 z-10 transition-all duration-300 ease-in-out`}>
+        <>
+            <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center justify-between border-b border-slate-200/80 bg-white/90 px-4 text-slate-900 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-[#121212]/90 dark:text-white md:hidden">
+                <button
+                    type="button"
+                    onClick={() => navigate('home', '/dashboard/Home')}
+                    className="flex min-h-11 items-center gap-2.5 rounded-xl pr-2"
+                    aria-label="Go to dashboard home"
+                >
+                    <Image src="/favicon.ico" alt="" width={36} height={36} className="size-9 rounded-lg object-contain" />
+                    <span className="text-base font-bold tracking-tight">Hackky Hub</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => navigate('settings', '/dashboard/Settings')}
+                    className={`grid size-11 place-items-center rounded-xl border transition-colors ${routeNav === 'settings'
+                        ? 'border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-300'
+                        : 'border-slate-200 bg-white text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300'
+                        }`}
+                    aria-label="Settings"
+                >
+                    <Settings className="size-5" />
+                </button>
+            </header>
+
+            <nav className="fixed inset-x-0 bottom-0 z-50 grid h-[calc(4.5rem+env(safe-area-inset-bottom))] grid-cols-5 border-t border-slate-200/80 bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-[#121212]/95 md:hidden" aria-label="Mobile dashboard navigation">
+                {([
+                    { nav: 'home', label: 'Home', path: '/dashboard/Home', icon: Home },
+                    { nav: 'hackathons', label: 'Events', path: '/dashboard/MNC hackathons', icon: Trophy },
+                    { nav: 'find', label: 'Find', path: '/dashboard/Find', icon: Users },
+                    { nav: 'teams', label: 'Teams', path: '/dashboard/Teams', icon: Folder },
+                    { nav: 'profile', label: 'Profile', path: '/dashboard/Profile', icon: User },
+                ] as const).map((item) => {
+                    const Icon = item.icon;
+                    const isActive = routeNav === item.nav;
+                    return (
+                        <button
+                            key={item.nav}
+                            type="button"
+                            onClick={() => navigate(item.nav, item.path)}
+                            className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold transition-colors ${isActive
+                                ? 'text-indigo-600 dark:text-indigo-300'
+                                : 'text-slate-500 dark:text-slate-400'
+                                }`}
+                            aria-current={isActive ? 'page' : undefined}
+                        >
+                            <Icon className="size-5" strokeWidth={isActive ? 2.5 : 2} />
+                            <span className="truncate">{item.label}</span>
+                        </button>
+                    );
+                })}
+            </nav>
+
+        <div className={`hidden shrink-0 relative ${isCollapsed ? 'w-[68px]' : 'w-[260px]'} h-full md:flex flex-col rounded-r-2xl bg-white/20 dark:bg-black/30 backdrop-blur-2xl border-r border-white/40 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] text-slate-800 dark:text-slate-200 z-10 transition-all duration-300 ease-in-out`}>
 
             {/* Header / Brand */}
             <div className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-between px-6'} pt-6 pb-2 mb-2 relative`}>
@@ -291,6 +353,7 @@ export function Sidebar() {
             </div>
 
         </div >
+        </>
     );
 }
 

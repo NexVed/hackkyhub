@@ -22,7 +22,8 @@ async def scheduled_scrape():
         "completed": 0,
         "saved": 0,
         "errors": 0,
-        "results": []
+        "results": [],
+        "skipped": 0,
     }
     
     # Run the actual scraping logic

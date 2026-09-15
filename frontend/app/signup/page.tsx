@@ -23,16 +23,16 @@ export default function SignupPage() {
     };
 
     return (
-        <div className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-8 bg-black overflow-hidden">
+        <div className="relative min-h-dvh w-full flex items-center justify-center px-3 py-4 sm:p-8 bg-black overflow-x-hidden overflow-y-auto">
             {/* Galaxy Background */}
             <div className="absolute inset-0 pointer-events-auto">
                 <Galaxy transparent={false} />
             </div>
 
             {/* Main Content Card */}
-            <div className="relative z-10 flex flex-col lg:flex-row bg-white rounded-3xl shadow-2xl overflow-hidden w-[95%] sm:w-full sm:max-w-md lg:max-w-5xl min-h-[600px] border-2 border-white/20">
+            <div className="relative z-10 flex w-full max-w-md flex-col overflow-hidden rounded-2xl border border-white/20 bg-white shadow-2xl sm:rounded-3xl lg:min-h-[600px] lg:max-w-5xl lg:flex-row">
                 {/* Banner Side */}
-                <div className="relative h-40 sm:h-64 w-full lg:h-auto lg:w-5/12 flex-shrink-0 bg-black">
+                <div className="relative h-28 w-full flex-shrink-0 bg-black sm:h-48 lg:h-auto lg:w-5/12">
                     <Image
                         src="/Banner2.png"
                         alt="HackkyHub Banner"
@@ -50,8 +50,8 @@ export default function SignupPage() {
                 </div>
 
                 {/* Form Side */}
-                <div className="flex flex-1 flex-col justify-center px-4 py-6 sm:px-6 sm:py-8 lg:px-12 xl:px-16">
-                    <div className="mx-auto w-full max-w-[18rem] sm:max-w-sm lg:max-w-sm xl:max-w-md">
+                <div className="flex flex-1 flex-col justify-center px-5 py-6 sm:px-8 sm:py-8 lg:px-12 xl:px-16">
+                    <div className="mx-auto w-full max-w-md">
                         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 mb-2">
                             Create an Account
                         </h2>
@@ -59,7 +59,7 @@ export default function SignupPage() {
                             Tell us about yourself to get started
                         </p>
 
-                        <form className="space-y-4 sm:space-y-6" onSubmit={handleSignUp}>
+                        <form className="space-y-4 sm:space-y-5" onSubmit={handleSignUp}>
                             <div className="space-y-2">
                                 <Label htmlFor="name" className="text-sm font-medium text-gray-900">Name</Label>
                                 <Input
@@ -117,7 +117,7 @@ export default function SignupPage() {
                             </Button>
                         </form>
 
-                        <div className="mt-8">
+                        <div className="mt-6 sm:mt-8">
                             <div className="relative">
                                 <div className="absolute inset-0 flex items-center">
                                     <div className="w-full border-t border-gray-200" />
@@ -168,7 +168,7 @@ export default function SignupPage() {
                             </div>
                         </div>
 
-                        <p className="mt-8 text-center text-sm text-gray-600">
+                        <p className="mt-6 text-center text-sm text-gray-600 sm:mt-8">
                             Already have an account?{" "}
                             <Link href="/login" className="font-semibold text-black hover:underline" prefetch={false}>
                                 Sign In

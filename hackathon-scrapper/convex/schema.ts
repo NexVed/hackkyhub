@@ -2,7 +2,19 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+    // New fields are optional for compatibility with already stored records.
     hackathons: defineTable({
+    slug: v.optional(v.string()),
+    banner_url: v.optional(v.string()),
+    logo_url: v.optional(v.string()),
+    platform_logo: v.optional(v.string()),
+    redirect_url: v.optional(v.string()),
+    prize_amount: v.optional(v.number()),
+    prize_currency: v.optional(v.string()),
+    registration_deadline: v.optional(v.string()),
+    is_mnc: v.optional(v.boolean()),
+    registered_count: v.optional(v.number()),
+    view_count: v.optional(v.number()),
         name: v.string(),
         description: v.optional(v.string()),
         url: v.string(),
@@ -21,5 +33,8 @@ export default defineSchema({
     })
         .index("by_url", ["url"])
         .index("by_platform", ["platform"])
-        .index("by_status", ["status"]),
+        .index("by_status", ["status"])
+        .index("by_platform_and_status", ["platform", "status"])
+        .index("by_is_mnc", ["is_mnc"])
+        .index("by_prize_amount", ["prize_amount"]),
 });

@@ -327,11 +327,11 @@ export function CinematicFooter({
       */}
       <div
         ref={wrapperRef}
-        className={cn("relative h-screen w-full", className)}
+        className={cn("relative h-[100svh] min-h-[40rem] w-full", className)}
         style={{ clipPath: "polygon(0% 0, 100% 0%, 100% 100%, 0 100%)" }}
       >
         {/* The actual footer stays fixed to the viewport underneath everything */}
-        <footer className="fixed bottom-0 left-0 flex h-screen w-full flex-col justify-between overflow-hidden bg-black text-white dark cinematic-footer-wrapper">
+        <footer className="fixed bottom-0 left-0 flex h-[100svh] min-h-[40rem] w-full flex-col justify-between overflow-hidden bg-black text-white dark cinematic-footer-wrapper">
           {/* Ambient Light & Grid Background */}
           <div className="footer-aurora absolute left-1/2 top-1/2 h-[60vh] w-[80vw] -translate-x-1/2 -translate-y-1/2 animate-footer-breathe rounded-[50%] blur-[80px] pointer-events-none z-0" />
           <div className="footer-bg-grid absolute inset-0 z-0 pointer-events-none" />
@@ -369,10 +369,10 @@ export function CinematicFooter({
           </div>
 
           {/* 2. Main Center Content */}
-          <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 mt-20 w-full max-w-5xl mx-auto">
+          <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 mt-20 w-full max-w-5xl mx-auto">
             <h2
               ref={headingRef}
-              className="text-5xl md:text-8xl font-black footer-text-glow tracking-tighter mb-10 text-center leading-[1.18] pb-2 overflow-visible"
+              className="text-4xl sm:text-5xl md:text-8xl font-black footer-text-glow tracking-tighter mb-7 sm:mb-10 text-center leading-[1.18] pb-2 overflow-visible"
             >
               {heading}
             </h2>
@@ -384,7 +384,7 @@ export function CinematicFooter({
                 <MagneticButton
                   as={Link}
                   href={primaryActionHref}
-                  className="footer-glass-pill px-8 sm:px-10 py-4 sm:py-5 rounded-full text-white font-semibold text-sm sm:text-base flex items-center gap-3 group transition-all"
+                  className="footer-glass-pill w-full justify-center px-6 sm:w-auto sm:px-10 py-4 sm:py-5 rounded-full text-white font-semibold text-sm sm:text-base flex items-center gap-3 group transition-all"
                 >
                   <Compass className="w-5 h-5 text-zinc-400 group-hover:text-white transition-colors" />
                   {primaryActionLabel}
@@ -393,7 +393,7 @@ export function CinematicFooter({
                 <MagneticButton
                   as={Link}
                   href={secondaryActionHref}
-                  className="footer-glass-pill px-8 sm:px-10 py-4 sm:py-5 rounded-full text-white font-semibold text-sm sm:text-base flex items-center gap-3 group transition-all"
+                  className="footer-glass-pill w-full justify-center px-6 sm:w-auto sm:px-10 py-4 sm:py-5 rounded-full text-white font-semibold text-sm sm:text-base flex items-center gap-3 group transition-all"
                 >
                   <Users className="w-5 h-5 text-zinc-400 group-hover:text-white transition-colors" />
                   {secondaryActionLabel}
@@ -428,7 +428,7 @@ export function CinematicFooter({
           </div>
 
           {/* 3. Bottom Bar / Credits */}
-          <div className="relative z-20 w-full pb-8 px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="relative z-20 w-full pb-5 px-4 sm:pb-8 sm:px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-6">
             {/* Copyright */}
             <div className="text-zinc-500 text-[10px] md:text-xs font-semibold tracking-widest uppercase order-2 md:order-1">
               {copyrightText}

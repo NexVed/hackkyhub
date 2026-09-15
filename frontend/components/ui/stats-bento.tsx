@@ -7,13 +7,13 @@ export const StatsBento = () => {
     <div className="flex flex-col justify-center">
       <div className="grid grid-cols-1 md:grid-cols-6 md:grid-rows-2 gap-4 max-w-7xl mx-auto w-full">
         {/* Primary Stat */}
-        <div className="md:col-span-3 md:row-span-2 bg-white rounded-3xl p-10 flex flex-col justify-between overflow-hidden relative group transition-transform duration-300 hover:-translate-y-0.5">
+        <div className="min-h-72 md:col-span-3 md:row-span-2 bg-white rounded-3xl p-6 sm:p-8 lg:p-10 flex flex-col justify-between overflow-hidden relative group transition-transform duration-300 hover:-translate-y-0.5">
           <div className="absolute bottom-0 left-0 right-0 top-0 bg-[repeating-linear-gradient(45deg,#808080_0px_1px,transparent_1px_10px)] opacity-30 mask-[radial-gradient(ellipse_80%_50%_at_100%_0%,#000_70%,transparent_110%)] pointer-events-none"></div>
           <div>
             <span className="inline-block px-3 py-1 bg-black/10 rounded-full text-[10px] font-semibold text-black/60 uppercase tracking-widest mb-6">
               Hackathons Tracked
             </span>
-            <h3 className="text-6xl tracking-tighter text-black font-light">
+            <h3 className="text-5xl sm:text-6xl tracking-tighter text-black font-light">
               500+
             </h3>
           </div>
@@ -24,7 +24,7 @@ export const StatsBento = () => {
         </div>
 
         {/* Secondary Stat A */}
-        <div className="md:col-span-3 bg-zinc-900 rounded-3xl p-8 border border-white/10 flex items-center justify-between transition-all duration-300 hover:border-white/20 hover:-translate-y-0.5">
+        <div className="md:col-span-3 bg-zinc-900 rounded-3xl p-6 sm:p-8 border border-white/10 flex items-center justify-between gap-4 transition-all duration-300 hover:border-white/20 hover:-translate-y-0.5">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-1">
               User Growth

@@ -54,7 +54,7 @@ export default function ActivityTracker() {
         <div className="bg-white rounded-[10px] p-4 lg:p-5 flex flex-col relative shadow-sm border border-[#E5E7EB] overflow-hidden flex-1 shrink-0">
 
             {/* Header Section */}
-            <div className="flex justify-between items-start md:items-center mb-5 relative z-10 w-full">
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start md:items-center mb-5 relative z-10 w-full">
                 <div>
                     <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-lg bg-[#F9FAFB] flex items-center justify-center border border-[#E5E7EB]">
@@ -73,13 +73,13 @@ export default function ActivityTracker() {
                     </div>
                 </div>
 
-                <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#10B981] hover:bg-[#059669] text-white rounded-full font-semibold text-[11px] shadow-[0_4px_10px_rgba(16,185,129,0.2)] transition-all duration-300">
+                <button className="flex min-h-10 w-full items-center justify-center gap-1.5 px-3 py-1.5 bg-[#10B981] hover:bg-[#059669] text-white rounded-full font-semibold text-[11px] shadow-[0_4px_10px_rgba(16,185,129,0.2)] transition-all duration-300 sm:min-h-0 sm:w-auto">
                     Export <ArrowUpRight size={12} strokeWidth={2.5} />
                 </button>
             </div>
 
             <div className="flex-grow flex flex-col justify-center relative z-10 w-full overflow-x-auto custom-scrollbar no-scrollbar py-1">
-                <div className="flex gap-4 lg:gap-6 mx-auto w-full justify-between">
+                <div className="flex min-w-[590px] gap-4 lg:gap-6 mx-auto w-full justify-between">
                     {months.map((month, i) => (
                         <div key={i} className="flex flex-col shrink-0 flex-1 items-center">
                             <div className="text-[#111827] font-semibold text-[11px] mb-2 text-center w-full">{month.name}</div>

@@ -119,13 +119,13 @@ export default function FeaturesCards() {
   }
 
   return (
-    <section className="pt-12 pb-16 px-4 bg-black">
+    <section className="px-4 pt-10 pb-14 sm:pt-12 sm:pb-16 bg-black">
       <div className="max-w-7xl mx-auto">
-        <ScrollReveal animation="fade-up" className="text-center mb-12">
+        <ScrollReveal animation="fade-up" className="text-center mb-9 sm:mb-12">
           <p className="mb-4 text-[0.68rem] font-medium tracking-[0.25em] text-zinc-500 uppercase">
             • Core Capabilities
           </p>
-          <h2 className="text-3xl sm:text-4xl lg:text-[2.85rem] font-light leading-[1.14] tracking-[-0.035em] text-white">
+          <h2 className="text-[1.75rem] sm:text-4xl lg:text-[2.85rem] font-light leading-[1.14] tracking-[-0.035em] text-white">
             Everything required to
             <span className="block font-serif italic font-normal text-zinc-300 mt-1">
               compete, build, and ship.
@@ -136,12 +136,12 @@ export default function FeaturesCards() {
           </p>
         </ScrollReveal>
 
-        <ScrollRevealGroup staggerDelay={0.08} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <ScrollRevealGroup staggerDelay={0.08} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {features.map((feature, index) => {
             const shaderConfig = getShaderConfig(index)
             return (
               <ScrollRevealItem key={index} animation="fade-up">
-                <div className="relative h-72 group transition-transform duration-300 hover:-translate-y-1">
+                <div className="relative h-64 sm:h-72 group transition-transform duration-300 hover:-translate-y-1">
                   <div className="absolute inset-0 rounded-3xl overflow-hidden">
                     <Warp
                       style={{ height: "100%", width: "100%" }}
@@ -159,7 +159,7 @@ export default function FeaturesCards() {
                     />
                   </div>
 
-                  <div className="relative z-10 p-8 rounded-3xl h-full flex flex-col bg-black/80 border border-white/10 transition-all duration-300 group-hover:border-white/20 group-hover:bg-black/75">
+                  <div className="relative z-10 p-6 sm:p-8 rounded-3xl h-full flex flex-col bg-black/80 border border-white/10 transition-all duration-300 group-hover:border-white/20 group-hover:bg-black/75">
                     <div className="mb-5 filter drop-shadow-lg">{feature.icon}</div>
 
                     <h3 className="text-xl font-bold mb-3 text-white">{feature.title}</h3>

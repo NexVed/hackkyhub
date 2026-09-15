@@ -54,6 +54,12 @@ const hackathonOrbits: OrbitConfig[] = [
         color: "#FF6B00",
         logoUrl: "/hackathons-logo/hack2skill.png",
       },
+      {
+        id: "devpost",
+        label: "Devpost",
+        color: "#003E54",
+        logoUrl: "/hackathons-logo/devpost.png",
+      },
     ],
   },
   {
@@ -75,16 +81,22 @@ const hackathonOrbits: OrbitConfig[] = [
         color: "#10B981",
         logoUrl: "/hackathons-logo/commudle-logo192.png",
       },
+      {
+        id: "devnovate",
+        label: "Devnovate",
+        color: "#8B5CF6",
+        logoUrl: "/hackathons-logo/devnovate.svg.DEVNOVATE.Woblo.svg",
+      },
     ],
   },
 ];
 
 export function IntegrationsSection() {
   return (
-    <section id="integrations" className="relative z-10 min-h-screen w-full bg-black text-white flex items-center justify-center px-6 py-20 lg:py-24 border-t border-white/5 overflow-hidden scroll-mt-20">
-      <div className="mx-auto max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center">
+    <section id="integrations" className="relative z-10 min-h-screen w-full bg-black text-white flex items-center justify-center px-4 py-16 sm:px-6 sm:py-20 lg:py-24 border-t border-white/5 overflow-hidden scroll-mt-20">
+      <div className="mx-auto max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 lg:gap-14 items-center">
         {/* LEFT COLUMN — Classic editorial typography & clean specs */}
-        <div className="lg:col-span-6 flex flex-col justify-center space-y-8">
+        <div className="lg:col-span-6 flex flex-col justify-center space-y-6 sm:space-y-8">
           {/* Classic Section Label */}
           <ScrollReveal animation="fade-up" delay={0.05}>
             <div className="flex items-center gap-2">
@@ -96,7 +108,7 @@ export function IntegrationsSection() {
 
           {/* Editorial Headline */}
           <ScrollReveal animation="fade-up" delay={0.15}>
-            <h2 className="text-3xl sm:text-4xl lg:text-[2.85rem] font-light leading-[1.14] tracking-[-0.035em] text-white">
+            <h2 className="text-[1.75rem] sm:text-4xl lg:text-[2.85rem] font-light leading-[1.14] tracking-[-0.035em] text-white">
               A single vantage point for
               <span className="block font-serif italic font-normal text-zinc-300 mt-1">
                 every major hackathon.
@@ -166,7 +178,7 @@ export function IntegrationsSection() {
         </div>
 
         {/* RIGHT COLUMN — 3D Solar System Orbit Component */}
-        <ScrollReveal animation="scale-up" delay={0.2} className="lg:col-span-6 flex items-center justify-center relative min-h-[420px] lg:min-h-[520px]">
+        <ScrollReveal animation="scale-up" delay={0.2} className="lg:col-span-6 flex items-center justify-center relative min-h-[340px] sm:min-h-[420px] lg:min-h-[520px]">
           <SolarSystem
             centerLogo={<LiquidMetalLogo className="size-full" />}
             centerLogoAlt="HackkyHub Gateway"

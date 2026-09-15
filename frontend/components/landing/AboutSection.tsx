@@ -7,6 +7,8 @@ import type { Logo } from "@/components/ui/logo-marquee";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 
 const platformLogos: Logo[] = [
+  { src: "/hackathons-logo/devpost.png", alt: "Devpost" },
+  { src: "/hackathons-logo/devnovate.svg.DEVNOVATE.Woblo.svg", alt: "Devnovate" },
   { src: "/hackathons-logo/devfolio-icon-filled-256.png", alt: "Devfolio" },
   { src: "/hackathons-logo/mlh-logo-color.png", alt: "MLH" },
   { src: "/hackathons-logo/hackerearth.jpg", alt: "HackerEarth" },
@@ -25,7 +27,7 @@ export function AboutSection() {
       </div>
 
       {/* ── About Content ── */}
-      <div className="flex flex-col items-center justify-center px-5 pt-12 pb-10 sm:px-8 sm:pt-16 sm:pb-12">
+      <div className="flex flex-col items-center justify-center px-4 pt-12 pb-10 sm:px-8 sm:pt-16 sm:pb-12">
         {/* Label */}
         <ScrollReveal animation="fade-up" delay={0.05}>
           <p className="mb-4 text-[0.68rem] font-medium tracking-[0.25em] text-zinc-500 uppercase">
@@ -35,7 +37,7 @@ export function AboutSection() {
 
         {/* Headline */}
         <ScrollReveal animation="fade-up" delay={0.15}>
-          <h2 className="mx-auto max-w-3xl text-center text-3xl sm:text-4xl lg:text-[2.85rem] font-light leading-[1.14] tracking-[-0.035em] text-white">
+          <h2 className="mx-auto max-w-3xl text-center text-[1.75rem] sm:text-4xl lg:text-[2.85rem] font-light leading-[1.14] tracking-[-0.035em] text-white">
             A universal gateway dedicated to
             <span className="block font-serif italic font-normal text-zinc-300 mt-1">
               building smarter teams and winning projects.
@@ -51,7 +53,7 @@ export function AboutSection() {
         </ScrollReveal>
 
         {/* Stats Bento Grid */}
-        <ScrollReveal animation="scale-up" delay={0.3} className="mt-14 w-full sm:mt-14">
+        <ScrollReveal animation="scale-up" delay={0.3} className="mt-10 w-full sm:mt-14">
           <StatsBento />
         </ScrollReveal>
       </div>

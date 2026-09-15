@@ -21,7 +21,7 @@ export default function ProfileHeader() {
 
             <div className="px-4 pb-4 relative">
                 {/* Actions Overlay */}
-                <div className="absolute top-2.5 right-4 flex flex-wrap items-center gap-1.5 z-20">
+                <div className="absolute top-2.5 right-3 flex flex-wrap items-center gap-1.5 z-20 sm:right-4">
                     <button className="w-6 h-6 rounded-full bg-white text-[#6B7280] border border-[#E5E7EB] flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm">
                         <Share2 size={10} />
                     </button>
@@ -38,7 +38,7 @@ export default function ProfileHeader() {
 
                 {/* Name & Details */}
                 <div className="mt-2">
-                    <h2 className="text-[16px] font-semibold text-[#111827] tracking-tight">Jake Richards</h2>
+                    <h2 className="max-w-[55%] text-[16px] font-semibold text-[#111827] tracking-tight sm:max-w-none">Jake Richards</h2>
                     <div className="flex flex-wrap items-center gap-2.5 mt-0.5">
                         <div className="flex items-center gap-1 text-[#6B7280] text-[11px]">
                             <span className="font-mono text-[10px]">{'</>'}</span>

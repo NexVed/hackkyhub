@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
@@ -10,10 +10,25 @@ class HackathonPlatform(str, Enum):
     UNSTOP = "unstop"
     HACK2SKILL = "hack2skill"
     DEVNOVATE = "devnovate"
+    DEVFOLIO = "devfolio"
+    HACKEREARTH = "hackerearth"
+    COMMUDLE = "commudle"
+    HACKCULTURE = "hackculture"
     CUSTOM = "custom"
 
 
 class HackathonBase(BaseModel):
+    slug: Optional[str] = None
+    banner_url: Optional[str] = None
+    logo_url: Optional[str] = None
+    platform_logo: Optional[str] = None
+    redirect_url: Optional[str] = None
+    prize_amount: Optional[float] = Field(default=None, ge=0, allow_inf_nan=False)
+    prize_currency: Optional[str] = None
+    registration_deadline: Optional[str] = None
+    registered_count: Optional[int] = Field(default=None, ge=0)
+    view_count: Optional[int] = Field(default=None, ge=0)
+    is_mnc: bool = False
     name: str = Field(..., max_length=500)
     description: Optional[str] = None
     url: str = Field(..., max_length=1000)
@@ -35,6 +50,17 @@ class HackathonCreate(HackathonBase):
 
 class HackathonUpdate(BaseModel):
     """Schema for updating a hackathon (all fields optional)"""
+    slug: Optional[str] = None
+    banner_url: Optional[str] = None
+    logo_url: Optional[str] = None
+    platform_logo: Optional[str] = None
+    redirect_url: Optional[str] = None
+    prize_amount: Optional[float] = Field(default=None, ge=0, allow_inf_nan=False)
+    prize_currency: Optional[str] = None
+    registration_deadline: Optional[str] = None
+    registered_count: Optional[int] = Field(default=None, ge=0)
+    view_count: Optional[int] = Field(default=None, ge=0)
+    is_mnc: Optional[bool] = None
     name: Optional[str] = None
     description: Optional[str] = None
     url: Optional[str] = None

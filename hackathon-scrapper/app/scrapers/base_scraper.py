@@ -23,7 +23,9 @@ class BaseScraper(ABC):
         try:
             response = self.session.get(url, timeout=10)
             response.raise_for_status()
-            return BeautifulSoup(response.content, 'lxml')
+            soup = BeautifulSoup(response.content, 'lxml')
+            soup._source_url = response.url
+            return soup
         except Exception as e:
             logger.error(f"Error fetching {url}: {str(e)}")
             return None

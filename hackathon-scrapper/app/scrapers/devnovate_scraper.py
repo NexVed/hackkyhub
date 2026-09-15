@@ -1,3 +1,7 @@
+from urllib.parse import urlsplit, urljoin
+from app.utils.normalization import belongs_to, parse_date, date_status, normalize_record
+from app.scrapers.metadata import entity_name
+from app.scrapers.custom_scraper import CustomScraper
 from typing import Dict, Any, Optional, List
 import re
 from datetime import datetime
@@ -17,9 +21,19 @@ class DevnovateScraper(BaseScraper):
     """Scraper for Devnovate events — uses their public JSON API."""
 
     def can_handle(self, url: str) -> bool:
-        return "devnovate" in url.lower()
+        return belongs_to(url, "devnovate.co")
 
     def scrape(self, url: str) -> Dict[str, Any]:
+        if urlsplit(url).path.rstrip("/") not in ("/events",):
+            # Match the requested event exactly; SPA detail shells often only contain a brand title.
+            target = urlsplit(url).path.rstrip("/")
+            for event in self._scrape_listing_page_all("https://devnovate.co/events"):
+                if urlsplit(event.get("url", "")).path.rstrip("/") == target:
+                    return normalize_record(event, url)
+            data = CustomScraper().scrape(url)
+            if "error" not in data:
+                data["platform"] = "devnovate"
+            return normalize_record(data, url)
         logger.info(f"Scraping Devnovate URL: {url}")
         results = self._scrape_listing_page_all(url)
         if results:
@@ -27,6 +41,8 @@ class DevnovateScraper(BaseScraper):
         return {"error": "No events found from Devnovate API"}
 
     def _scrape_listing_page_all(self, url: str) -> List[Dict[str, Any]]:
+        if urlsplit(url).path.rstrip("/") not in ("/events",):
+            return [self.scrape(url)]
         """Fetch ALL events from Devnovate's JSON API (single request — returns all)."""
         try:
             data = self._fetch_api()
@@ -69,6 +85,8 @@ class DevnovateScraper(BaseScraper):
 
     def _parse_api_item(self, item: Dict) -> Optional[Dict[str, Any]]:
         """Parse a single event from the Devnovate API response."""
+        if not item.get("name") or not item.get("hackathon"):
+            return None
         try:
             name = item.get("name", "Unknown Event")
 
@@ -111,7 +129,7 @@ class DevnovateScraper(BaseScraper):
             organizer = item.get("organizationName", "Devnovate")
 
             # Description
-            description = item.get("description", "") or item.get("shortDescription", "")
+            description = item.get("description", "") or item.get("shortDescription", "") or item.get("subtitle", "")
             if description:
                 description = re.sub(r'<[^>]+>', ' ', str(description))
                 description = re.sub(r'\s+', ' ', description).strip()[:500]
@@ -122,20 +140,24 @@ class DevnovateScraper(BaseScraper):
             # Determine status from dates
             hack_status = self._determine_status(start_date, end_date)
 
-            return {
+            return normalize_record({
                 "name": name,
                 "description": description,
                 "url": url,
                 "platform": HackathonPlatform.DEVNOVATE,
+                "banner_url": item.get("banner") or item.get("coverImage") or item.get("bannerImage") or item.get("cardImage"),
+                "logo_url": item.get("logo") or item.get("organizationLogo"),
+                "registration_deadline": reg_deadline,
+                "registered_count": item.get("numberOfRegistrations"),
                 "start_date": start_date,
                 "end_date": end_date,
-                "location": location,
+                "location": item.get("location") or location,
                 "is_online": is_online,
                 "prizes": str(prizes) if prizes else "",
                 "themes": themes[:10],
                 "organizer": organizer,
                 "status": hack_status,
-            }
+            })
 
         except Exception as e:
             logger.error(f"Error parsing Devnovate API item: {e}")
@@ -151,24 +173,8 @@ class DevnovateScraper(BaseScraper):
             # Try ISO format as fallback
             return self._parse_iso_date(date_str)
 
-    def _parse_iso_date(self, date_str: Optional[str]) -> Optional[datetime]:
-        if not date_str:
-            return None
-        try:
-            clean = re.sub(r'[+-]\d{2}:\d{2}$', '', str(date_str))
-            clean = clean.replace('Z', '')
-            return datetime.fromisoformat(clean)
-        except (ValueError, TypeError):
-            return None
+    def _parse_iso_date(self, date_str):
+        return parse_date(date_str)
 
-    def _determine_status(self, start_date, end_date) -> str:
-        now = datetime.now()
-        if not start_date:
-            return "upcoming"
-        if now < start_date:
-            return "upcoming"
-        if end_date and start_date <= now <= end_date:
-            return "ongoing"
-        if end_date and now > end_date:
-            return "completed"
-        return "upcoming"
+    def _determine_status(self, start_date, end_date):
+        return date_status(start_date, end_date)

@@ -25,7 +25,6 @@ const navigation = [
 ];
 
 export function LandingPage() {
-  const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -40,8 +39,6 @@ export function LandingPage() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-
       const sections = ["faq", "integrations", "features", "about"];
       const scrollPosition = window.scrollY + 250;
 
@@ -68,24 +65,18 @@ export function LandingPage() {
     <SmoothScrollProvider>
       <div className="w-full min-h-screen overflow-x-hidden bg-black text-white no-scrollbar">
         {/* Floating Fixed Navbar across all sections */}
-        <header
-          className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 px-3 sm:px-6 ${
-            scrolled
-              ? "py-2.5 bg-black/75 backdrop-blur-xl border-b border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)]"
-              : "py-3 sm:py-5 bg-transparent"
-          }`}
-        >
-          <nav className="relative mx-auto flex h-16 max-w-[94rem] items-center justify-between px-3 sm:px-4">
+        <header className="fixed inset-x-0 top-0 z-50 bg-transparent px-4 py-[1.875rem] transition-all duration-300 pointer-events-none min-[421px]:px-8 sm:px-6 sm:py-5">
+          <nav className="relative mx-auto flex h-14 max-w-[94rem] items-center justify-between sm:h-16 sm:px-4 pointer-events-none">
             <Link
               href="/"
               onClick={(e) => {
                 e.preventDefault();
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }}
-              className="group flex items-center gap-3"
+              className="group flex min-w-0 items-center gap-2.5 pointer-events-auto sm:gap-3"
               aria-label="HackkyHub home"
             >
-              <span className={`${styles.headerLogo} relative h-9 w-12 overflow-hidden`}>
+              <span className={`${styles.headerLogo} relative h-10 w-[3.25rem] shrink-0 overflow-hidden sm:h-9 sm:w-12`}>
                 <LiquidMetalLogo className="size-full" />
               </span>
               <span className={styles.brandName}>
@@ -93,14 +84,14 @@ export function LandingPage() {
               </span>
             </Link>
 
-            <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 md:block">
+            <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 md:block pointer-events-auto">
               <LiquidGlassNav items={navigation} activeSection={activeSection} />
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 pointer-events-auto">
               <Link
                 href="/signup"
-                className="rounded-xl bg-gradient-to-b from-white to-zinc-300 px-4 py-2.5 text-[0.88rem] font-semibold tracking-tight text-black shadow-[0_0_28px_rgba(255,255,255,0.16)] transition-transform hover:-translate-y-0.5 sm:px-5 sm:py-3 sm:text-[0.95rem]"
+                className="inline-flex min-h-12 min-w-[6.75rem] items-center justify-center rounded-2xl bg-gradient-to-b from-white to-zinc-300 px-4 py-3 text-[0.92rem] font-semibold tracking-tight text-black shadow-[0_0_28px_rgba(255,255,255,0.16)] transition-transform hover:-translate-y-0.5 min-[421px]:min-w-[7.75rem] sm:min-h-0 sm:min-w-0 sm:rounded-xl sm:px-5 sm:py-3 sm:text-[0.95rem]"
               >
                 Get started
               </Link>
@@ -109,7 +100,7 @@ export function LandingPage() {
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen((prev) => !prev)}
-                className="flex size-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-zinc-300 transition-colors hover:bg-white/10 hover:text-white md:hidden"
+                className="flex size-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-zinc-300 transition-colors hover:bg-white/10 hover:text-white md:hidden pointer-events-auto"
                 aria-label="Toggle navigation menu"
                 aria-expanded={mobileMenuOpen}
               >
@@ -120,7 +111,7 @@ export function LandingPage() {
 
           {/* Mobile Dropdown Menu */}
           {mobileMenuOpen && (
-            <div className="mx-auto mt-2 w-full max-w-[94rem] rounded-2xl border border-white/10 bg-black/85 p-4 shadow-2xl backdrop-blur-2xl md:hidden">
+            <div className="mx-auto mt-2 w-full max-w-[94rem] rounded-2xl border border-white/10 bg-black/85 p-4 shadow-2xl backdrop-blur-2xl md:hidden pointer-events-auto">
               <div className="flex flex-col gap-1.5">
                 {navigation.map((item) => {
                   const isActive = activeSection === item.href.replace("#", "");
@@ -152,7 +143,7 @@ export function LandingPage() {
         </header>
 
         {/* Hero Section — full screen */}
-        <section id="hero" className="relative isolate h-screen w-full overflow-hidden">
+        <section id="hero" className="relative isolate h-[100svh] min-h-[36rem] w-full overflow-hidden">
           <div className="absolute inset-0 -z-30" aria-hidden="true">
             <ParticleStarfield />
           </div>
@@ -196,26 +187,6 @@ export function LandingPage() {
 
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-28 bg-gradient-to-t from-black/65 to-transparent" />
 
-          <section
-            className="absolute inset-x-4 bottom-4 z-30 rounded-2xl border border-white/10 bg-black/65 p-4 backdrop-blur-xl sm:hidden"
-          >
-            <p className="text-[0.58rem] tracking-[0.18em] text-zinc-500 uppercase">
-              Where builders meet momentum
-            </p>
-            <div className="mt-2 flex items-end justify-between gap-3">
-              <div>
-                <h1 className="text-3xl font-light leading-none tracking-[-0.06em]">Build boldly.</h1>
-                <p className={`${styles.silverText} text-3xl font-medium leading-none italic`}>Win together.</p>
-              </div>
-              <Link
-                href="/signup"
-                className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-lg text-black"
-                aria-label="Get started"
-              >
-                ↗
-              </Link>
-            </div>
-          </section>
         </section>
 
         {/* About Section */}

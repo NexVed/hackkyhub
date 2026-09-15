@@ -1,3 +1,9 @@
+from datetime import datetime, timezone
+from app.utils.normalization import normalize_record
+from app.scrapers.devfolio_scraper import DevfolioScraper
+from app.scrapers.hackerearth_scraper import HackerEarthScraper
+from app.scrapers.commudle_scraper import CommudleScraper
+from app.scrapers.hackculture_scraper import HackCultureScraper
 from typing import List, Dict, Any
 from app.scrapers.base_scraper import BaseScraper
 from app.scrapers.devpost_scraper import DevpostScraper
@@ -9,6 +15,7 @@ from app.scrapers.custom_scraper import CustomScraper
 import logging
 
 logger = logging.getLogger(__name__)
+ACTIVE_STATUSES = frozenset(("upcoming", "ongoing"))
 
 # Register all scrapers (CustomScraper last — it handles any URL)
 _scrapers: List[BaseScraper] = [
@@ -17,16 +24,24 @@ _scrapers: List[BaseScraper] = [
     UnstopScraper(),
     Hack2SkillScraper(),
     DevnovateScraper(),
+    DevfolioScraper(),
+    HackerEarthScraper(),
+    CommudleScraper(),
+    HackCultureScraper(),
     CustomScraper(),
 ]
 
 # Default listing URLs for each platform
 PLATFORM_URLS = [
     "https://devpost.com/hackathons",
-    "https://mlh.io/seasons/2025/events",
+    f"https://mlh.io/seasons/{datetime.now(timezone.utc).year + (datetime.now(timezone.utc).month >= 7)}/events",
     "https://unstop.com/hackathons",
     "https://vision.hack2skill.com/hackathons-listing",
     "https://devnovate.co/events",
+    "https://devfolio.co/hackathons",
+    "https://www.hackerearth.com/challenges/hackathon/",
+    "https://www.commudle.com/explore/hackathons",
+    "https://hackculture.com/events",
 ]
 
 
@@ -42,30 +57,14 @@ def get_scraper(url: str) -> BaseScraper:
 
 
 def _normalize_result(result: Dict[str, Any]) -> Dict[str, Any]:
-    """Normalize scraper output — convert enums to strings, ensure required fields."""
-    if "error" in result:
-        return result
-
-    # Convert HackathonPlatform enum to string
-    platform = result.get("platform", "other")
-    if hasattr(platform, "value"):
-        result["platform"] = platform.value
-    else:
-        result["platform"] = str(platform)
-
-    # Ensure required fields exist
-    result.setdefault("name", "Unknown")
-    result.setdefault("url", "")
-    result.setdefault("is_online", False)
-    result.setdefault("status", "upcoming")
-    return result
+    return normalize_record(result)
 
 
 def scrape_url(url: str) -> Dict[str, Any]:
     """Scrape a single URL and return a single result dict"""
     scraper = get_scraper(url)
     result = scraper.scrape(url)
-    return _normalize_result(result)
+    return normalize_record(result, url)
 
 
 def scrape_url_all(url: str) -> List[Dict[str, Any]]:
@@ -86,4 +85,11 @@ def scrape_url_all(url: str) -> List[Dict[str, Any]]:
         raw = scraper.scrape(url)
         results = [raw]
 
-    return [_normalize_result(r) for r in results if r and "error" not in r]
+    normalized = [normalize_record(r, url) for r in results if r and "error" not in r]
+    # Listing discovery is intentionally active-only. A user can still paste a
+    # completed event URL into /scrape for an explicit one-off lookup.
+    active = [r for r in normalized if "error" not in r and r.get("status") in ACTIVE_STATUSES]
+    skipped = len([r for r in normalized if "error" not in r]) - len(active)
+    if skipped:
+        logger.info("Skipped %s completed event(s) from %s", skipped, url)
+    return active

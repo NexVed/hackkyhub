@@ -105,7 +105,7 @@
 .brandName {
   color: #f4f4f5;
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  font-size: 1.125rem;
+  font-size: clamp(1.05rem, 4.4vw, 1.35rem);
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -135,7 +135,7 @@
 
 @media (max-width: 767px) {
   .heroWordmark {
-    top: 17vh;
+    top: 25vh;
     opacity: 0.78;
   }
 
@@ -148,5 +148,15 @@
     padding-left: 0.35em;
     font-size: clamp(0.31rem, 1.65vw, 0.48rem);
     letter-spacing: 0.35em;
+  }
+}
+
+@media (max-width: 420px) {
+  .brandName {
+    display: none;
+  }
+
+  .headerLogo {
+    width: 2.5rem;
   }
 }

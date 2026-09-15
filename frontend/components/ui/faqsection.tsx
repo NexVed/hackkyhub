@@ -101,7 +101,7 @@ export function FAQSection({
   className,
 }: FAQSectionProps) {
   return (
-    <section className={cn("w-full max-w-6xl mx-auto py-20 px-6", className)}>
+    <section className={cn("w-full max-w-6xl mx-auto px-4 py-16 sm:px-6 sm:py-20", className)}>
       {/* Header */}
       <ScrollReveal animation="fade-up" className="text-center mb-14">
         {subtitle && (
@@ -109,7 +109,7 @@ export function FAQSection({
             {subtitle}
           </p>
         )}
-        <h2 className="text-3xl sm:text-4xl lg:text-[2.85rem] font-light leading-[1.14] tracking-[-0.035em] text-white mb-4">
+        <h2 className="text-[1.75rem] sm:text-4xl lg:text-[2.85rem] font-light leading-[1.14] tracking-[-0.035em] text-white mb-4">
           {title}
         </h2>
         {description && (
@@ -129,7 +129,7 @@ export function FAQSection({
       </ScrollReveal>
 
       {/* FAQs Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 text-left items-start">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-8 lg:gap-12 text-left items-start">
         {[faqsLeft, faqsRight].map((faqColumn, columnIndex) => (
           <ScrollRevealGroup
             key={columnIndex}
