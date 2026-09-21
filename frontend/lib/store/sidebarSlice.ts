@@ -10,7 +10,8 @@ export interface SidebarState {
 const initialState: SidebarState = {
     isCollapsed: false,
     isTeamsOpen: true,
-    activeAction: 'sun',
+    // Dark is the default look; ThemeSync overrides this from localStorage.
+    activeAction: 'moon',
     activeNav: 'home',
 };
 

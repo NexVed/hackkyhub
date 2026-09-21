@@ -39,4 +39,22 @@ export default defineSchema({
         .index("by_platform_and_status", ["platform", "status"])
         .index("by_is_mnc", ["is_mnc"])
         .index("by_prize_amount", ["prize_amount"]),
+
+    // Per-user library. Kept as their own tables rather than arrays on the user
+    // document so they can grow without hitting the 1MB document limit.
+    savedHackathons: defineTable({
+        userId: v.id("users"),
+        hackathonId: v.id("hackathons"),
+        savedAt: v.number(),
+    })
+        .index("by_userId", ["userId"])
+        .index("by_userId_and_hackathonId", ["userId", "hackathonId"]),
+
+    hackathonViews: defineTable({
+        userId: v.id("users"),
+        hackathonId: v.id("hackathons"),
+        viewedAt: v.number(),
+    })
+        .index("by_userId_and_hackathonId", ["userId", "hackathonId"])
+        .index("by_userId_and_viewedAt", ["userId", "viewedAt"]),
 });

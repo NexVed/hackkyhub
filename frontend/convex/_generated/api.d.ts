@@ -8,8 +8,13 @@
  * @module
  */
 
+import type * as ResendOTP from "../ResendOTP.js";
+import type * as analytics from "../analytics.js";
 import type * as auth from "../auth.js";
+import type * as hackathonPipeline from "../hackathonPipeline.js";
+import type * as hackathons from "../hackathons.js";
 import type * as http from "../http.js";
+import type * as userLibrary from "../userLibrary.js";
 
 import type {
   ApiFromModules,
@@ -18,8 +23,13 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  ResendOTP: typeof ResendOTP;
+  analytics: typeof analytics;
   auth: typeof auth;
+  hackathonPipeline: typeof hackathonPipeline;
+  hackathons: typeof hackathons;
   http: typeof http;
+  userLibrary: typeof userLibrary;
 }>;
 
 /**
