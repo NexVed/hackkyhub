@@ -7,7 +7,6 @@ import { motion } from "motion/react";
 import {
   AlarmClock,
   ArrowLeft,
-  ArrowUpRight,
   Building2,
   CalendarDays,
   FileText,
@@ -28,6 +27,7 @@ import { phaseOf, toTime } from "@/convex/lib/phase";
 import { PhaseBadge, Skeleton, ease } from "@/components/dashboard/primitives";
 import { SaveButton, platformGradient } from "@/components/dashboard/HackathonCards";
 import { NetworkField } from "@/components/visuals/NetworkField";
+import { ApplyPanel } from "./ApplyPanel";
 import { BrandMark } from "@/components/visuals/BrandMark";
 import { formatDateRange, money, relativeTime } from "@/lib/format";
 import { officialUrl, plainText, safeHttpUrl } from "@/lib/hackathon";
@@ -341,35 +341,18 @@ function FactsCard({
       </dl>
 
       <div className="relative mt-5 space-y-2.5">
-        {official ? (
-          <motion.a
-            href={official}
-            target="_blank"
-            rel="noopener noreferrer"
-            whileHover={{ y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 via-indigo-500 to-sky-500 px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(139,92,246,0.9)]"
-          >
-            Open official page <ArrowUpRight className="h-4 w-4" />
-          </motion.a>
-        ) : (
-          <p className="rounded-2xl border border-white/10 px-4 py-3 text-center text-sm text-white/45">
-            Official link {MISSING.toLowerCase()}
-          </p>
-        )}
+        <ApplyPanel
+          hackathon={hackathon}
+          official={official}
+          closed={(deadline !== null && deadline <= now) || phaseOf(hackathon, now) === "completed"}
+          signedIn={signedIn}
+        />
 
-        {signedIn ? (
+        {signedIn && (
           <div className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-white/65">
             <SaveButton hackathon={hackathon} />
             Save to your library
           </div>
-        ) : (
-          <Link
-            href="/login"
-            className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-white/65 transition-colors hover:text-white"
-          >
-            <LogIn className="h-4 w-4" /> Sign in to save and track
-          </Link>
         )}
 
         <p className="px-1 text-center text-[11px] leading-relaxed text-white/35">

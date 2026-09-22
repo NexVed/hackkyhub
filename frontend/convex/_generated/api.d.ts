@@ -15,6 +15,7 @@ import type * as hackathonPipeline from "../hackathonPipeline.js";
 import type * as hackathons from "../hackathons.js";
 import type * as http from "../http.js";
 import type * as lib_phase from "../lib/phase.js";
+import type * as registrations from "../registrations.js";
 import type * as userLibrary from "../userLibrary.js";
 import type * as users from "../users.js";
 
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   hackathons: typeof hackathons;
   http: typeof http;
   "lib/phase": typeof lib_phase;
+  registrations: typeof registrations;
   userLibrary: typeof userLibrary;
   users: typeof users;
 }>;

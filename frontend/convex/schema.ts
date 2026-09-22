@@ -56,6 +56,18 @@ export default defineSchema({
         .index("by_userId", ["userId"])
         .index("by_userId_and_hackathonId", ["userId", "hackathonId"]),
 
+    // Registration tracking. `startedAt` is recorded when the user clicks
+    // Apply Now and is sent to the official site. `selfReportedAt` is set only
+    // when the user says they finished registering; HackkyHub cannot verify it.
+    registrations: defineTable({
+        userId: v.id("users"),
+        hackathonId: v.id("hackathons"),
+        startedAt: v.number(),
+        selfReportedAt: v.optional(v.number()),
+    })
+        .index("by_userId_and_hackathonId", ["userId", "hackathonId"])
+        .index("by_userId_and_startedAt", ["userId", "startedAt"]),
+
     // Details the user chose themselves. Kept apart from the auth `users`
     // table because Convex Auth overwrites users.name/image with the provider
     // profile on every Google/GitHub sign-in.

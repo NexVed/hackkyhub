@@ -185,3 +185,9 @@
 .font-display {
   font-family: "Times New Roman", Times, Georgia, serif;
 }
+
+/* Sweep of light across the Apply Now button. */
+@keyframes shine {
+  0%, 55% { transform: translateX(0) skewX(-20deg); }
+  100% { transform: translateX(450%) skewX(-20deg); }
+}
