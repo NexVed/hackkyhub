@@ -3,14 +3,16 @@
 import { useMemo } from "react";
 import { useQuery } from "convex/react";
 import { motion } from "motion/react";
-import { BadgeCheck, Bookmark, CalendarClock, CalendarDays, Eye, Flame, Mail, MapPin, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { BadgeCheck, Bookmark, CalendarClock, CalendarDays, Eye, Flame, KeyRound, Mail, MapPin, PencilLine, Sparkles } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { AnimatedCounter } from "@/components/dashboard/AnimatedCounter";
 import { HackathonRow } from "@/components/dashboard/HackathonCards";
 import { EmptyNote, ListSkeleton, Panel, Skeleton, ease } from "@/components/dashboard/primitives";
 import { NetworkField } from "@/components/visuals/NetworkField";
 import { initials, relativeTime } from "@/lib/format";
-import { PROFILE } from "@/lib/profile";
+import { displayName, providerLabel } from "@/lib/profile";
+import { UserAvatar } from "./UserAvatar";
 import { cn } from "@/lib/utils";
 
 const WEEKS = 12;
@@ -22,9 +24,9 @@ function dayKey(time: number) {
 }
 
 /**
- * Profile page. Name, role and location are the owner's chosen display
- * fields (lib/profile.ts); every number, list and heatmap cell below them is
- * read from Convex for the signed-in account.
+ * Profile page for the signed-in account. Name, headline and location come
+ * from the user's own Settings (or their Google/GitHub profile); every
+ * number, list and heatmap cell is read from Convex.
  */
 export function ProfileOverview() {
   const viewer = useQuery(api.users.viewer, {});
@@ -33,7 +35,7 @@ export function ProfileOverview() {
   const recent = useQuery(api.userLibrary.listRecentlyViewed, { limit: 6 });
   const activity = useQuery(api.userLibrary.getMyActivity, { days: WEEKS * 7 });
 
-  const name = PROFILE.displayName;
+  const name = displayName(viewer);
 
   const heatmap = useMemo(() => {
     if (!activity) return null;
@@ -80,19 +82,27 @@ export function ProfileOverview() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 1, delay: 0.3, ease }}
             >
-              {initials(name)}
+              {name ? initials(name) : ""}
             </motion.div>
           </div>
 
           <div className="relative px-6 pb-7 sm:px-10">
             <div className="-mt-14 flex flex-col gap-5 sm:-mt-16 sm:flex-row sm:items-end sm:justify-between">
-              <Monogram name={name} />
+              <Monogram name={name} image={viewer?.image ?? null} />
               <div className="flex flex-wrap gap-2 sm:pb-2">
-                {viewer?.email && (
+                {viewer?.emailVerified && (
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-200">
                     <BadgeCheck className="h-3.5 w-3.5" /> Email verified
                   </span>
                 )}
+                {viewer?.providers.map((provider) => (
+                  <span
+                    key={provider}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.05] px-3 py-1 text-xs font-medium text-white/65"
+                  >
+                    <KeyRound className="h-3.5 w-3.5" /> {providerLabel(provider)}
+                  </span>
+                ))}
                 {heatmap && heatmap.streak > 0 && (
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-200">
                     <Flame className="h-3.5 w-3.5" /> {heatmap.streak}-day streak
@@ -101,16 +111,24 @@ export function ProfileOverview() {
               </div>
             </div>
 
-            <AnimatedName name={name} />
+            {name ? <AnimatedName key={name} name={name} /> : <Skeleton className="mt-5 h-12 w-72 max-w-full" />}
 
-            <motion.p
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.65, duration: 0.5 }}
-              className="mt-2 flex items-center gap-2 text-sm font-medium text-violet-200/80"
-            >
-              <Sparkles className="h-4 w-4" /> {PROFILE.role}
-            </motion.p>
+            {viewer && (
+              <motion.p
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.65, duration: 0.5 }}
+                className="mt-2 flex items-center gap-2 text-sm font-medium text-violet-200/80"
+              >
+                {viewer.headline ? (
+                  <>
+                    <Sparkles className="h-4 w-4" /> {viewer.headline}
+                  </>
+                ) : (
+                  <SettingsPrompt>{viewer.name ? "Add a headline" : "Set your name and headline"}</SettingsPrompt>
+                )}
+              </motion.p>
+            )}
 
             <motion.div
               initial={{ opacity: 0 }}
@@ -118,9 +136,11 @@ export function ProfileOverview() {
               transition={{ delay: 0.8, duration: 0.5 }}
               className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/55"
             >
-              <span className="inline-flex items-center gap-1.5">
-                <MapPin className="h-4 w-4 text-rose-300/80" /> {PROFILE.location}
-              </span>
+              {viewer?.location && (
+                <span className="inline-flex items-center gap-1.5">
+                  <MapPin className="h-4 w-4 text-rose-300/80" /> {viewer.location}
+                </span>
+              )}
               {viewer?.email && (
                 <span className="inline-flex items-center gap-1.5">
                   <Mail className="h-4 w-4 text-sky-300/80" /> {viewer.email}
@@ -235,6 +255,17 @@ export function ProfileOverview() {
   );
 }
 
+function SettingsPrompt({ children }: { children: React.ReactNode }) {
+  return (
+    <Link
+      href="/dashboard/Settings"
+      className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-violet-300/35 px-3 py-1 text-xs text-violet-200/80 transition-colors hover:border-violet-300/70 hover:text-white"
+    >
+      <PencilLine className="h-3.5 w-3.5" /> {children}
+    </Link>
+  );
+}
+
 /** Name revealed letter by letter, set in Times New Roman. */
 function AnimatedName({ name }: { name: string }) {
   return (
@@ -262,8 +293,8 @@ function AnimatedName({ name }: { name: string }) {
   );
 }
 
-/** Initials inside a slowly rotating gradient ring. */
-function Monogram({ name }: { name: string }) {
+/** Provider photo or initials inside a slowly rotating gradient ring. */
+function Monogram({ name, image }: { name: string | null; image: string | null }) {
   return (
     <motion.div
       initial={{ scale: 0.6, opacity: 0 }}
@@ -276,9 +307,11 @@ function Monogram({ name }: { name: string }) {
         animate={{ rotate: 360 }}
         transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
       />
-      <div className="absolute inset-[4px] grid place-items-center rounded-full bg-[radial-gradient(circle_at_30%_25%,#27204a,#0b0c18_75%)]">
-        <span className="font-display text-4xl italic text-white sm:text-5xl">{initials(name)}</span>
-      </div>
+      <UserAvatar
+        name={name}
+        image={image}
+        className="font-display absolute inset-[4px] rounded-full bg-[radial-gradient(circle_at_30%_25%,#27204a,#0b0c18_75%)] text-4xl italic text-white sm:text-5xl"
+      />
       <span className="absolute bottom-2 right-2 h-4 w-4 rounded-full border-[3px] border-[#0b0c18] bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.9)]" />
     </motion.div>
   );

@@ -8,8 +8,9 @@ import { useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Bell, LogOut, Search, Settings, User } from "lucide-react";
 import { api } from "@/convex/_generated/api";
-import { formatCountdown, initials } from "@/lib/format";
-import { PROFILE } from "@/lib/profile";
+import { formatCountdown } from "@/lib/format";
+import { displayName } from "@/lib/profile";
+import { UserAvatar } from "@/components/profile/UserAvatar";
 import { cn } from "@/lib/utils";
 import { ease } from "./primitives";
 
@@ -60,8 +61,8 @@ export function DashboardHeader({
   const notifRef = useDismiss(notifOpen, () => setNotifOpen(false));
   const menuRef = useDismiss(menuOpen, () => setMenuOpen(false));
 
-  const name = viewer?.name ?? PROFILE.displayName;
-  const firstName = name.split(/\s+/)[0];
+  const name = displayName(viewer);
+  const firstName = name?.split(/\s+/)[0] ?? null;
 
   // "/" or Ctrl/Cmd+K focuses search, like most developer tools.
   useEffect(() => {
@@ -86,7 +87,7 @@ export function DashboardHeader({
     >
       <div className="min-w-0">
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-violet-200/60">{greeting()}</p>
-        <p className="font-display mt-1 truncate text-2xl italic text-white">{firstName}</p>
+        <p className="font-display mt-1 truncate text-2xl italic text-white">{firstName ?? "\u00a0"}</p>
       </div>
 
       <div className="flex items-center gap-2.5">
@@ -190,9 +191,11 @@ export function DashboardHeader({
             aria-expanded={menuOpen}
             className="relative grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 via-indigo-500 to-teal-400 p-[1.5px]"
           >
-            <span className="font-display grid h-full w-full place-items-center rounded-[14px] bg-[#0d0e1a] text-sm font-semibold text-white">
-              {initials(name)}
-            </span>
+            <UserAvatar
+              name={name}
+              image={viewer?.image ?? null}
+              className="font-display h-full w-full rounded-[14px] bg-[#0d0e1a] text-sm font-semibold text-white"
+            />
           </motion.button>
 
           <AnimatePresence>
@@ -210,7 +213,7 @@ export function DashboardHeader({
   );
 }
 
-function ProfileMenu({ name, email, onNavigate }: { name: string; email: string | null; onNavigate: () => void }) {
+function ProfileMenu({ name, email, onNavigate }: { name: string | null; email: string | null; onNavigate: () => void }) {
   const { signOut } = useAuthActions();
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
@@ -224,7 +227,7 @@ function ProfileMenu({ name, email, onNavigate }: { name: string; email: string 
       className="absolute right-0 top-[calc(100%+10px)] w-64 origin-top-right overflow-hidden rounded-2xl border border-white/10 bg-[#0d0e1a]/95 shadow-2xl backdrop-blur-2xl"
     >
       <div className="border-b border-white/8 px-4 py-3.5">
-        <p className="font-display truncate text-base text-white">{name}</p>
+        <p className="font-display truncate text-base text-white">{name ?? "Your account"}</p>
         {email && <p className="truncate text-xs text-white/40">{email}</p>}
       </div>
       <div className="p-1.5">

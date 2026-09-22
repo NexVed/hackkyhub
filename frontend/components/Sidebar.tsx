@@ -7,14 +7,19 @@ import { useAppDispatch, useAppSelector } from '@/lib/store';
 import { usePathname, useRouter } from 'next/navigation';
 import { setIsCollapsed, toggleIsCollapsed, setIsTeamsOpen, toggleIsTeamsOpen, setActiveAction, setActiveNav } from '@/lib/store/sidebarSlice';
 import { useAuthActions } from '@convex-dev/auth/react';
-import { PROFILE } from '@/lib/profile';
-import { initials } from '@/lib/format';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { displayName } from '@/lib/profile';
+import { UserAvatar } from '@/components/profile/UserAvatar';
 
 export function Sidebar() {
     const dispatch = useAppDispatch();
     const router = useRouter();
     const pathname = usePathname();
     const { signOut } = useAuthActions();
+    const viewer = useQuery(api.users.viewer, {});
+    const userName = displayName(viewer);
+    const userDetail = viewer?.location ?? viewer?.email ?? '';
     const { isCollapsed, isTeamsOpen, activeAction, activeNav } = useAppSelector((state) => state.sidebar);
     const routeNav = pathname.startsWith('/dashboard/Profile') ? 'profile'
         : pathname.startsWith('/dashboard/Settings') ? 'settings'
@@ -336,16 +341,18 @@ export function Sidebar() {
                     <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'gap-3'}`}>
                         <div className="relative shrink-0">
                             <div className="w-10 h-10 rounded-full p-[2px] bg-gradient-to-br from-violet-500 via-indigo-500 to-teal-400 shadow-md">
-                                <div className="font-display w-full h-full rounded-full bg-white dark:bg-[#0d0e1a] grid place-items-center text-[13px] italic font-semibold text-slate-900 dark:text-white">
-                                    {initials(PROFILE.displayName)}
-                                </div>
+                                <UserAvatar
+                                    name={userName}
+                                    image={viewer?.image ?? null}
+                                    className="font-display w-full h-full rounded-full bg-white dark:bg-[#0d0e1a] text-[13px] italic font-semibold text-slate-900 dark:text-white"
+                                />
                             </div>
                             <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#27C93F] border-2 border-white dark:border-slate-800"></div>
                         </div>
                         {!isCollapsed && (
                             <div className="flex flex-col min-w-0">
-                                <span className="font-display font-semibold text-sm truncate opacity-100 transition-opacity">{PROFILE.displayName}</span>
-                                <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate opacity-100 transition-opacity">{PROFILE.location}</span>
+                                <span className="font-display font-semibold text-sm truncate opacity-100 transition-opacity">{userName ?? 'Your account'}</span>
+                                <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate opacity-100 transition-opacity">{userDetail}</span>
                             </div>
                         )}
                     </div>

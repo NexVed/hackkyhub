@@ -50,6 +50,17 @@ export default defineSchema({
         .index("by_userId", ["userId"])
         .index("by_userId_and_hackathonId", ["userId", "hackathonId"]),
 
+    // Details the user chose themselves. Kept apart from the auth `users`
+    // table because Convex Auth overwrites users.name/image with the provider
+    // profile on every Google/GitHub sign-in.
+    profiles: defineTable({
+        userId: v.id("users"),
+        displayName: v.optional(v.string()),
+        headline: v.optional(v.string()),
+        location: v.optional(v.string()),
+        updatedAt: v.number(),
+    }).index("by_userId", ["userId"]),
+
     hackathonViews: defineTable({
         userId: v.id("users"),
         hackathonId: v.id("hackathons"),
