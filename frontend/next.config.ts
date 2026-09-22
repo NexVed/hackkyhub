@@ -13,6 +13,9 @@ const nextConfig: NextConfig = {
     return [
       { source: "/hackathon", destination: "/hackathons", permanent: false },
       { source: "/hackathon/:key", destination: "/hackathons/:key", permanent: false },
+      // The MNC route folder contains a space, so links that lose it 404.
+      { source: "/dashboard/mnc", destination: "/dashboard/MNC%20hackathons", permanent: false },
+      { source: "/dashboard/mnc-hackathons", destination: "/dashboard/MNC%20hackathons", permanent: false },
     ];
   },
 };
