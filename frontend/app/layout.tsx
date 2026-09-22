@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import StoreProvider from "@/components/StoreProvider";
 import { ThemeSync, themeBootstrapScript } from "@/components/ThemeSync";
+import { MotionProvider } from "@/components/MotionProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -42,7 +43,7 @@ export default function RootLayout({
           <ConvexClientProvider>
             <StoreProvider>
               <ThemeSync />
-              {children}
+              <MotionProvider>{children}</MotionProvider>
             </StoreProvider>
           </ConvexClientProvider>
         </body>

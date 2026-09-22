@@ -91,6 +91,18 @@ export const getDashboardStats = query({
     let withPrize = 0;
     let lastSynced: number | null = null;
 
+    // Start-date timeline: this month plus the next five, keyed "YYYY-MM" (UTC).
+    const monthKeys: string[] = [];
+    {
+      const cursor = new Date(now);
+      cursor.setUTCDate(1);
+      for (let i = 0; i < 6; i++) {
+        monthKeys.push(`${cursor.getUTCFullYear()}-${String(cursor.getUTCMonth() + 1).padStart(2, "0")}`);
+        cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+      }
+    }
+    const startsByMonth = new Map<string, number>(monthKeys.map((key) => [key, 0]));
+
     const prizeByCurrency = new Map<string, { amount: number; count: number }>();
     const platformCounts = new Map<string, { total: number; upcoming: number }>();
 
@@ -127,6 +139,13 @@ export const getDashboardStats = query({
       if (phase === "upcoming") entry.upcoming++;
       platformCounts.set(platform, entry);
 
+      const start = toTime(row.start_date);
+      if (start !== null) {
+        const d = new Date(start);
+        const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+        if (startsByMonth.has(key)) startsByMonth.set(key, (startsByMonth.get(key) ?? 0) + 1);
+      }
+
       const touched = toTime(row.updated_at) ?? toTime(row.created_at);
       if (touched !== null && (lastSynced === null || touched > lastSynced)) {
         lastSynced = touched;
@@ -148,6 +167,7 @@ export const getDashboardStats = query({
       mnc,
       mode: { online, offline },
       closingSoon,
+      startsByMonth: monthKeys.map((month) => ({ month, count: startsByMonth.get(month) ?? 0 })),
       prize: { withPrize, pools: prizePools },
       platforms,
       lastSynced,
@@ -215,5 +235,102 @@ export const getUpcoming = query({
       })
       .sort((a, b) => a.start - b.start)
       .slice(0, limit);
+  },
+});
+
+/**
+ * Largest listed prize pools that have not finished. Walks the existing
+ * `by_prize_amount` index from the top instead of scanning the table.
+ * Amounts are compared raw, so mixed currencies are not normalised; each
+ * card shows its own currency.
+ */
+export const getFeatured = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const limit = Math.min(12, Math.max(1, Math.floor(args.limit ?? 4)));
+
+    const candidates = await ctx.db
+      .query("hackathons")
+      .withIndex("by_prize_amount")
+      .order("desc")
+      .take(200);
+
+    return candidates
+      .filter(
+        (row) =>
+          typeof row.prize_amount === "number" &&
+          row.prize_amount > 0 &&
+          phaseOf(row, now) !== "completed",
+      )
+      .slice(0, limit)
+      .map((row) => ({ hackathon: row, phase: phaseOf(row, now) }));
+  },
+});
+
+const PHASE_RANK: Record<Phase, number> = { ongoing: 0, upcoming: 1, unknown: 2, completed: 3 };
+
+/**
+ * Filterable explorer. Uses the `by_platform` index when a platform is chosen,
+ * then applies the remaining filters in memory over a bounded slice.
+ */
+export const explore = query({
+  args: {
+    search: v.optional(v.string()),
+    platform: v.optional(v.string()),
+    mode: v.optional(v.union(v.literal("online"), v.literal("offline"))),
+    phase: v.optional(
+      v.union(v.literal("upcoming"), v.literal("ongoing"), v.literal("completed")),
+    ),
+    mncOnly: v.optional(v.boolean()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const limit = Math.min(60, Math.max(1, Math.floor(args.limit ?? 12)));
+    const platform = args.platform;
+
+    const rows = platform
+      ? await ctx.db
+          .query("hackathons")
+          .withIndex("by_platform", (q) => q.eq("platform", platform))
+          .take(MAX_SCAN)
+      : await ctx.db.query("hackathons").take(MAX_SCAN);
+
+    const needle = args.search?.trim().toLowerCase() ?? "";
+
+    const matched = rows
+      .map((row) => ({ row, phase: phaseOf(row, now) }))
+      .filter(({ row, phase }) => {
+        if (args.mode === "online" && !row.is_online) return false;
+        if (args.mode === "offline" && row.is_online) return false;
+        if (args.phase && phase !== args.phase) return false;
+        if (args.mncOnly && row.is_mnc !== true) return false;
+        if (!needle) return true;
+        const haystack = [
+          row.name,
+          row.organizer,
+          row.platform,
+          row.location,
+          ...(row.themes ?? []),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(needle);
+      })
+      .sort((a, b) => {
+        const rank = PHASE_RANK[a.phase] - PHASE_RANK[b.phase];
+        if (rank !== 0) return rank;
+        const aStart = toTime(a.row.start_date) ?? Number.MAX_SAFE_INTEGER;
+        const bStart = toTime(b.row.start_date) ?? Number.MAX_SAFE_INTEGER;
+        return aStart - bStart;
+      });
+
+    return {
+      items: matched.slice(0, limit).map(({ row, phase }) => ({ hackathon: row, phase })),
+      total: matched.length,
+      truncated: rows.length === MAX_SCAN,
+    };
   },
 });

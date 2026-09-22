@@ -1,5 +1,5 @@
 import AuthFlow from "@/components/auth/AuthFlow";
 
 export default function LoginPage() {
-  return <AuthFlow redirectTo="/dashboard/Profile" />;
+  return <AuthFlow mode="signin" redirectTo="/dashboard" />;
 }

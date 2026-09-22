@@ -167,3 +167,21 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Honour the OS "reduce motion" setting for every CSS animation and
+   transition. Motion components are covered separately by MotionProvider. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Serif accent used for the brand's italic highlights and the profile name. */
+.font-display {
+  font-family: "Times New Roman", Times, Georgia, serif;
+}

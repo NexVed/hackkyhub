@@ -202,3 +202,39 @@ export const getMyLibraryStats = query({
     };
   },
 });
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Raw timestamps of the signed-in user's saves and most recent opens in the
+ * last `days` days. Bucketing happens on the client so days follow the
+ * viewer's own timezone. Views are one row per hackathon (re-opening updates
+ * it), so this is "latest touch" activity rather than every page view.
+ */
+export const getMyActivity = query({
+  args: { days: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) return null;
+
+    const days = Math.min(180, Math.max(7, Math.floor(args.days ?? 84)));
+    const since = Date.now() - days * DAY_MS;
+
+    const views = await ctx.db
+      .query("hackathonViews")
+      .withIndex("by_userId_and_viewedAt", (q) => q.eq("userId", userId).gte("viewedAt", since))
+      .take(500);
+
+    const saves = await ctx.db
+      .query("savedHackathons")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .take(500);
+
+    return {
+      since,
+      days,
+      views: views.map((row) => row.viewedAt),
+      saves: saves.filter((row) => row.savedAt >= since).map((row) => row.savedAt),
+    };
+  },
+});
