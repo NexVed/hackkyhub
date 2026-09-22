@@ -30,7 +30,7 @@ import { NetworkField } from "@/components/visuals/NetworkField";
 import { ApplyPanel } from "./ApplyPanel";
 import { BrandMark } from "@/components/visuals/BrandMark";
 import { formatDateRange, money, relativeTime } from "@/lib/format";
-import { officialUrl, plainText, safeHttpUrl } from "@/lib/hackathon";
+import { officialUrl, plainText, prizeText, registrationClosed, safeHttpUrl } from "@/lib/hackathon";
 import { cn } from "@/lib/utils";
 
 type Hackathon = Doc<"hackathons">;
@@ -132,6 +132,10 @@ function Detail({ hackathon, signedIn }: { hackathon: Hackathon; signedIn: boole
   const banner = safeHttpUrl(hackathon.banner_url);
   const logo = safeHttpUrl(hackathon.logo_url);
   const description = hackathon.description ? plainText(hackathon.description) : "";
+  const prizes = prizeText(hackathon, money);
+  // A text breakdown beats a bare total when the source gave one.
+  const prizeDetail = prizes !== null && hackathon.prizes?.trim() ? plainText(hackathon.prizes) : null;
+  const closed = registrationClosed(hackathon, now);
 
   return (
     <>
@@ -178,6 +182,11 @@ function Detail({ hackathon, signedIn }: { hackathon: Hackathon; signedIn: boole
               <span className="rounded-md border border-white/12 bg-white/5 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/60">
                 {hackathon.is_online ? "Online" : "In person"}
               </span>
+              {closed && (
+                <span className="rounded-md border border-white/15 bg-black/40 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/55">
+                  Registration closed
+                </span>
+              )}
             </div>
           </div>
 
@@ -254,16 +263,14 @@ function Detail({ hackathon, signedIn }: { hackathon: Hackathon; signedIn: boole
           </Section>
 
           <Section icon={Trophy} title="Prizes" delay={0.25}>
-            {hackathon.prizes ? (
-              <p className="whitespace-pre-line break-words text-sm leading-relaxed text-white/70">
-                {plainText(hackathon.prizes)}
-              </p>
-            ) : typeof hackathon.prize_amount === "number" && hackathon.prize_amount > 0 ? (
-              <p className="text-sm text-white/70">
-                Total prize pool of {money(hackathon.prize_amount, hackathon.prize_currency)}. Breakdown not provided by source.
-              </p>
-            ) : (
+            {prizes === null ? (
               <Missing />
+            ) : prizeDetail ? (
+              <p className="whitespace-pre-line break-words text-sm leading-relaxed text-white/70">{prizeDetail}</p>
+            ) : (
+              <p className="text-sm text-white/70">
+                Total prize pool of {prizes}. Breakdown not provided by source.
+              </p>
             )}
           </Section>
         </div>
@@ -290,10 +297,7 @@ function FactsCard({
 }) {
   const deadline = toTime(hackathon.registration_deadline);
   const dates = formatDateRange(hackathon.start_date, hackathon.end_date);
-  const prize =
-    typeof hackathon.prize_amount === "number" && hackathon.prize_amount > 0
-      ? money(hackathon.prize_amount, hackathon.prize_currency)
-      : null;
+  const prize = prizeText(hackathon, money);
   const synced = toTime(hackathon.updated_at) ?? toTime(hackathon.created_at);
 
   return (

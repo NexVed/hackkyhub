@@ -1,16 +1,32 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { ArrowRight, Bookmark, Building2, CalendarDays, MapPin, Trophy, Wifi } from "lucide-react";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { formatDateRange, money } from "@/lib/format";
-import { hackathonPath } from "@/lib/hackathon";
+import { hackathonPath, prizeText, registrationClosed } from "@/lib/hackathon";
 import { cn } from "@/lib/utils";
 import { PhaseBadge, ease } from "./primitives";
 import { useLibrary } from "./useLibrary";
 
 type Hackathon = Doc<"hackathons">;
+
+/**
+ * Shown when the registration deadline has passed even though the event
+ * itself has not started, which several sources still list as upcoming.
+ */
+function ClosedBadge({ hackathon }: { hackathon: Hackathon }) {
+  // Read once per mount; a deadline does not move while a card is on screen.
+  const [now] = useState(() => Date.now());
+  if (!registrationClosed(hackathon, now)) return null;
+  return (
+    <span className="rounded-md border border-white/15 bg-black/50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/60">
+      Reg closed
+    </span>
+  );
+}
 
 /** Deterministic gradient per platform so cards without a banner still vary. */
 export function platformGradient(platform: string) {
@@ -122,10 +138,7 @@ export function HackathonCard({
   size?: "md" | "lg";
 }) {
   const dates = formatDateRange(hackathon.start_date, hackathon.end_date);
-  const prize =
-    typeof hackathon.prize_amount === "number" && hackathon.prize_amount > 0
-      ? money(hackathon.prize_amount, hackathon.prize_currency)
-      : (hackathon.prizes ?? null);
+  const prize = prizeText(hackathon, money);
 
   return (
     <motion.article
@@ -159,6 +172,7 @@ export function HackathonCard({
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a0b14] via-[#0a0b14]/30 to-transparent" />
         <div className="absolute left-3 top-3 flex items-center gap-1.5">
           <PhaseBadge phase={phase} />
+          <ClosedBadge hackathon={hackathon} />
           {hackathon.is_mnc && (
             <span className="inline-flex items-center gap-1 rounded-md border border-emerald-400/30 bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-200">
               <Building2 className="h-3 w-3" /> MNC

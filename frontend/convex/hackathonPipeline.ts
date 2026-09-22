@@ -184,7 +184,8 @@ export const syncHackathons = internalMutation({
       };
 
       if (existing) {
-        await ctx.db.patch(existing._id, hackathon);
+        // Keep the date the record first appeared; only updated_at moves.
+        await ctx.db.patch(existing._id, { ...hackathon, created_at: existing.created_at });
         updated++;
       } else {
         await ctx.db.insert("hackathons", hackathon);

@@ -54,3 +54,33 @@ export function plainText(value: string) {
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
+
+/**
+ * Some sources list a prize of "$0" or 0. That is an absent prize, not a
+ * prize worth nothing, so it is shown as "not listed" rather than "$0".
+ */
+export function isZeroPrizeText(value: string) {
+  const text = value.trim();
+  if (!/\d/.test(text)) return false;
+  return /^[^\d]*0+(\.0+)?[^\d]*$/.test(text);
+}
+
+/** Prize text to display, or null when the source listed none. */
+export function prizeText(
+  hackathon: { prize_amount?: number; prize_currency?: string; prizes?: string },
+  money: (amount: number, currency?: string | null) => string,
+) {
+  if (typeof hackathon.prize_amount === "number" && hackathon.prize_amount > 0) {
+    return money(hackathon.prize_amount, hackathon.prize_currency);
+  }
+  const text = hackathon.prizes?.trim();
+  if (!text || isZeroPrizeText(text)) return null;
+  return text;
+}
+
+/** True when the registration deadline has passed. */
+export function registrationClosed(hackathon: { registration_deadline?: string }, now: number) {
+  if (!hackathon.registration_deadline) return false;
+  const deadline = Date.parse(hackathon.registration_deadline);
+  return !Number.isNaN(deadline) && deadline <= now;
+}
