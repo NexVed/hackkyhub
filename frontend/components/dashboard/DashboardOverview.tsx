@@ -11,6 +11,7 @@ import { AnimatedCounter } from "./AnimatedCounter";
 import { DashboardHeader } from "./DashboardHeader";
 import { HackathonCard, HackathonRow } from "./HackathonCards";
 import { HackathonExplorer } from "./HackathonExplorer";
+import { MyAgenda } from "./MyAgenda";
 import { ModeDonut } from "./ModeDonut";
 import { PlatformBars } from "./PlatformBars";
 import { StartsTimeline } from "./StartsTimeline";
@@ -219,6 +220,9 @@ export function DashboardOverview() {
             )}
           </Panel>
         </div>
+
+        {/* Personal tracking */}
+        {library?.signedIn && <MyAgenda />}
 
         {/* Personal library */}
         {library?.signedIn && (

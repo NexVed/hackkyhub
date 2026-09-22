@@ -27,15 +27,22 @@ export function HackathonExplorer({
   search,
   onClearSearch,
   platforms,
+  lockMnc = false,
+  title = "Hackathon explorer",
+  emptySubtitle = "Search and filter everything in Convex",
 }: {
   search: string;
   onClearSearch: () => void;
   platforms: string[];
+  /** MNC-only pages keep the filter on and hide its toggle. */
+  lockMnc?: boolean;
+  title?: string;
+  emptySubtitle?: string;
 }) {
   const [phase, setPhase] = useState<Phase | undefined>(undefined);
   const [mode, setMode] = useState<Mode | undefined>(undefined);
   const [platform, setPlatform] = useState<string | undefined>(undefined);
-  const [mncOnly, setMncOnly] = useState(false);
+  const [mncOnly, setMncOnly] = useState(lockMnc);
   const [limit, setLimit] = useState(PAGE);
 
   const debouncedSearch = useDebounced(search.trim(), 250);
@@ -64,16 +71,18 @@ export function HackathonExplorer({
   const shown = result ?? lastResult;
   const loading = result === undefined;
 
-  const activeFilters = [phase, mode, platform, mncOnly ? "mnc" : undefined, debouncedSearch].filter(Boolean).length;
+  const activeFilters = [phase, mode, platform, !lockMnc && mncOnly ? "mnc" : undefined, debouncedSearch].filter(
+    Boolean,
+  ).length;
 
   return (
     <Panel
       id="explore"
-      title="Hackathon explorer"
+      title={title}
       subtitle={
         shown
-          ? `${shown.total.toLocaleString()} match${shown.total === 1 ? "" : "es"}${shown.truncated ? " (first 6,000 records)" : ""}`
-          : "Search and filter everything in Convex"
+          ? `${shown.total.toLocaleString()} ${lockMnc ? "corporate " : ""}match${shown.total === 1 ? "" : "es"}${shown.truncated ? " (first 6,000 records)" : ""}`
+          : emptySubtitle
       }
       action={
         activeFilters > 0 ? (
@@ -83,7 +92,7 @@ export function HackathonExplorer({
               setPhase(undefined);
               setMode(undefined);
               setPlatform(undefined);
-              setMncOnly(false);
+              setMncOnly(lockMnc);
               onClearSearch();
             }}
             className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1 text-xs text-white/55 transition-colors hover:text-white"
@@ -118,6 +127,7 @@ export function HackathonExplorer({
           ]}
           group="mode"
         />
+        {!lockMnc && (
         <button
           type="button"
           aria-pressed={mncOnly}
@@ -131,6 +141,7 @@ export function HackathonExplorer({
         >
           <Building2 className="h-3.5 w-3.5" /> MNC only
         </button>
+        )}
         {platforms.length > 0 && (
           <select
             value={platform ?? ""}
@@ -157,7 +168,11 @@ export function HackathonExplorer({
         </div>
       ) : shown.items.length === 0 ? (
         <EmptyNote>
-          {activeFilters > 0 ? "No hackathons match these filters." : "No hackathons in Convex yet. Run the scraper sync to fill this in."}
+          {activeFilters > 0
+            ? "No hackathons match these filters."
+            : lockMnc
+              ? "No company-hosted hackathons in Convex yet."
+              : "No hackathons in Convex yet. Run the scraper sync to fill this in."}
         </EmptyNote>
       ) : (
         <>

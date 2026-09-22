@@ -88,3 +88,34 @@ export const getMine = query({
     return { startedAt: row.startedAt, selfReportedAt: row.selfReportedAt ?? null };
   },
 });
+
+/**
+ * The signed-in user's tracked registrations, newest first. Rows whose
+ * hackathon has since been removed are dropped.
+ */
+export const listMine = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) return [];
+
+    const limit = Math.min(100, Math.max(1, Math.floor(args.limit ?? 20)));
+    const rows = await ctx.db
+      .query("registrations")
+      .withIndex("by_userId_and_startedAt", (q) => q.eq("userId", userId))
+      .order("desc")
+      .take(limit);
+
+    const items = [];
+    for (const row of rows) {
+      const hackathon = await ctx.db.get(row.hackathonId);
+      if (hackathon === null) continue;
+      items.push({
+        hackathon,
+        startedAt: row.startedAt,
+        selfReportedAt: row.selfReportedAt ?? null,
+      });
+    }
+    return items;
+  },
+});
