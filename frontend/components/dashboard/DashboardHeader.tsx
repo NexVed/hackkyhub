@@ -10,6 +10,7 @@ import { Bell, LogOut, Search, Settings, User } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { formatCountdown } from "@/lib/format";
 import { displayName } from "@/lib/profile";
+import { hackathonPath } from "@/lib/hackathon";
 import { UserAvatar } from "@/components/profile/UserAvatar";
 import { cn } from "@/lib/utils";
 import { ease } from "./primitives";
@@ -155,10 +156,9 @@ export function DashboardHeader({
                   <ul className="max-h-80 overflow-y-auto py-1">
                     {alerts.map((alert) => (
                       <li key={alert.hackathon._id}>
-                        <a
-                          href={alert.hackathon.redirect_url ?? alert.hackathon.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <Link
+                          href={hackathonPath(alert.hackathon)}
+                          onClick={() => setNotifOpen(false)}
                           className="flex items-center justify-between gap-3 px-4 py-2.5 transition-colors hover:bg-white/[0.05]"
                         >
                           <span className="min-w-0">
@@ -168,7 +168,7 @@ export function DashboardHeader({
                           <span className="shrink-0 rounded-md border border-rose-400/30 bg-rose-500/10 px-1.5 py-0.5 text-[11px] font-medium text-rose-200">
                             {formatCountdown(alert.hoursLeft)}
                           </span>
-                        </a>
+                        </Link>
                       </li>
                     ))}
                   </ul>

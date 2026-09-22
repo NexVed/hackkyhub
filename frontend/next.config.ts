@@ -8,6 +8,13 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname),
   },
+  // Forgive the common typo of the singular path.
+  async redirects() {
+    return [
+      { source: "/hackathon", destination: "/hackathons", permanent: false },
+      { source: "/hackathon/:key", destination: "/hackathons/:key", permanent: false },
+    ];
+  },
 };
 
 export default nextConfig;

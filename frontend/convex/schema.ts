@@ -32,8 +32,14 @@ export default defineSchema({
         scraped_from: v.string(),
         created_at: v.string(),
         updated_at: v.optional(v.string()),
+        // Detail-page fields. Only set when the source platform publishes them;
+        // the UI says "Not provided by source" otherwise.
+        tracks: v.optional(v.array(v.string())),
+        eligibility: v.optional(v.string()),
+        rules: v.optional(v.string()),
     })
         .index("by_url", ["url"])
+        .index("by_slug", ["slug"])
         .index("by_platform", ["platform"])
         .index("by_status", ["status"])
         .index("by_platform_and_status", ["platform", "status"])

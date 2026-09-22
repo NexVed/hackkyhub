@@ -1,21 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "motion/react";
-import { ArrowUpRight, Bookmark, Building2, CalendarDays, MapPin, Trophy, Wifi } from "lucide-react";
+import { ArrowRight, Bookmark, Building2, CalendarDays, MapPin, Trophy, Wifi } from "lucide-react";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { formatDateRange, money } from "@/lib/format";
+import { hackathonPath } from "@/lib/hackathon";
 import { cn } from "@/lib/utils";
 import { PhaseBadge, ease } from "./primitives";
 import { useLibrary } from "./useLibrary";
 
 type Hackathon = Doc<"hackathons">;
 
-function hrefOf(hackathon: Hackathon) {
-  return hackathon.redirect_url ?? hackathon.url;
-}
-
 /** Deterministic gradient per platform so cards without a banner still vary. */
-function platformGradient(platform: string) {
+export function platformGradient(platform: string) {
   const palettes = [
     "from-violet-600/60 via-indigo-600/40 to-sky-500/30",
     "from-teal-500/50 via-emerald-600/30 to-indigo-700/40",
@@ -28,7 +26,7 @@ function platformGradient(platform: string) {
   return palettes[hash % palettes.length];
 }
 
-function SaveButton({ hackathon, className }: { hackathon: Hackathon; className?: string }) {
+export function SaveButton({ hackathon, className }: { hackathon: Hackathon; className?: string }) {
   const { isSaved, toggleSave } = useLibrary();
   const saved = isSaved(hackathon._id);
   return (
@@ -67,7 +65,6 @@ export function HackathonRow({
   urgent?: boolean;
   index?: number;
 }) {
-  const { recordView } = useLibrary();
   return (
     <motion.li
       initial={{ opacity: 0, x: -12 }}
@@ -76,13 +73,7 @@ export function HackathonRow({
       transition={{ delay: index * 0.06, duration: 0.4, ease }}
       className="group flex items-center gap-2 rounded-2xl border border-white/8 bg-white/[0.03] p-3 transition-all hover:border-white/20 hover:bg-white/[0.06]"
     >
-      <a
-        href={hrefOf(hackathon)}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={() => recordView(hackathon._id)}
-        className="flex min-w-0 flex-1 items-center gap-3"
-      >
+      <Link href={hackathonPath(hackathon)} className="flex min-w-0 flex-1 items-center gap-3">
         {hackathon.logo_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -104,7 +95,7 @@ export function HackathonRow({
             <span className="capitalize">{hackathon.platform}</span>
           </span>
         </span>
-      </a>
+      </Link>
       <span
         className={cn(
           "shrink-0 rounded-lg border px-2 py-1 text-[11px] font-medium tabular-nums",
@@ -130,7 +121,6 @@ export function HackathonCard({
   index?: number;
   size?: "md" | "lg";
 }) {
-  const { recordView } = useLibrary();
   const dates = formatDateRange(hackathon.start_date, hackathon.end_date);
   const prize =
     typeof hackathon.prize_amount === "number" && hackathon.prize_amount > 0
@@ -146,13 +136,10 @@ export function HackathonCard({
       whileHover={{ y: -5 }}
       className="group relative flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035] transition-colors hover:border-violet-300/30"
     >
-      <a
-        href={hrefOf(hackathon)}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={() => recordView(hackathon._id)}
+      <Link
+        href={hackathonPath(hackathon)}
         className="absolute inset-0 z-10"
-        aria-label={`Open ${hackathon.name}`}
+        aria-label={`View details for ${hackathon.name}`}
       />
 
       <div className={cn("relative overflow-hidden", size === "lg" ? "h-40" : "h-28")}>
@@ -231,7 +218,7 @@ export function HackathonCard({
           )}
           <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium capitalize text-white/45 transition-colors group-hover:text-violet-200">
             {hackathon.platform}
-            <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
           </span>
         </div>
       </div>

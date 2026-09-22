@@ -1,6 +1,41 @@
 import { internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 
+const MAX_TRACKS = 50;
+const MAX_TRACK_LENGTH = 300;
+const MAX_TEXT_LENGTH = 20_000;
+
+/** Trimmed text within the size cap, or undefined when absent/blank. */
+function text(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, MAX_TEXT_LENGTH) : undefined;
+}
+
+/**
+ * Tracks arrive either as strings or as `{ name, description }` objects,
+ * depending on the platform. Stored as display strings.
+ */
+function tracks(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const out: string[] = [];
+  for (const entry of value) {
+    let label: string | undefined;
+    if (typeof entry === "string") {
+      label = entry;
+    } else if (entry && typeof entry === "object" && typeof entry.name === "string") {
+      label =
+        typeof entry.description === "string" && entry.description.trim()
+          ? `${entry.name.trim()}: ${entry.description.trim()}`
+          : entry.name;
+    }
+    label = label?.trim();
+    if (label) out.push(label.slice(0, MAX_TRACK_LENGTH));
+    if (out.length === MAX_TRACKS) break;
+  }
+  return out.length > 0 ? out : undefined;
+}
+
 export const syncHackathons = internalMutation({
   args: {
     hackathons: v.array(v.any()),
@@ -125,6 +160,10 @@ export const syncHackathons = internalMutation({
           typeof item.organizer === "string"
             ? item.organizer
             : undefined,
+
+        tracks: tracks(item.tracks),
+        eligibility: text(item.eligibility),
+        rules: text(item.rules),
 
         status:
           typeof item.status === "string"

@@ -10,3 +10,22 @@ export const getMNC = query({
             .take(Math.min(1000, Math.max(1, Math.floor(args.limit ?? 100))));
     },
 });
+
+/**
+ * One hackathon for the public detail page, looked up by document id or by
+ * slug (whichever the URL carries). Returns null when nothing matches.
+ */
+export const getByKey = query({
+    args: { key: v.string() },
+    handler: async (ctx, args) => {
+        const key = args.key.trim();
+        if (!key || key.length > 200) return null;
+
+        const id = ctx.db.normalizeId("hackathons", key);
+        if (id !== null) return await ctx.db.get(id);
+
+        return await ctx.db.query("hackathons")
+            .withIndex("by_slug", (q) => q.eq("slug", key))
+            .first();
+    },
+});

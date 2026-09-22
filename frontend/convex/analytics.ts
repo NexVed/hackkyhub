@@ -1,6 +1,9 @@
 import { query, type QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
+import { phaseOf, toTime, type Phase } from "./lib/phase";
+
+export type { Phase };
 
 /**
  * Dashboard analytics.
@@ -18,48 +21,6 @@ const MAX_SCAN = 6000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 type Hackathon = Doc<"hackathons">;
-
-export type Phase = "upcoming" | "ongoing" | "completed" | "unknown";
-
-/** Parses a scraped date string; returns null when it is missing or unusable. */
-function toTime(value?: string | null): number | null {
-  if (!value) return null;
-  const parsed = Date.parse(value);
-  return Number.isNaN(parsed) ? null : parsed;
-}
-
-/**
- * Real dates beat the scraped `status` string, which goes stale the moment a
- * hackathon starts. We only fall back to `status` when no date is usable.
- */
-function phaseOf(hackathon: Hackathon, now: number): Phase {
-  const start = toTime(hackathon.start_date);
-  const end = toTime(hackathon.end_date);
-
-  if (start !== null && end !== null) {
-    if (now < start) return "upcoming";
-    return now <= end ? "ongoing" : "completed";
-  }
-  if (start !== null) return now < start ? "upcoming" : "ongoing";
-  if (end !== null) return now <= end ? "ongoing" : "completed";
-
-  switch ((hackathon.status ?? "").trim().toLowerCase()) {
-    case "upcoming":
-    case "open":
-      return "upcoming";
-    case "ongoing":
-    case "live":
-    case "active":
-      return "ongoing";
-    case "completed":
-    case "closed":
-    case "ended":
-    case "expired":
-      return "completed";
-    default:
-      return "unknown";
-  }
-}
 
 /** Popularity signal from whatever engagement numbers the platform exposed. */
 function momentumOf(hackathon: Hackathon): number {
