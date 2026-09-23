@@ -32,11 +32,58 @@ export default defineSchema({
         scraped_from: v.string(),
         created_at: v.string(),
         updated_at: v.optional(v.string()),
+        // Detail-page fields. Only set when the source platform publishes them;
+        // the UI says "Not provided by source" otherwise.
+        tracks: v.optional(v.array(v.string())),
+        eligibility: v.optional(v.string()),
+        rules: v.optional(v.string()),
     })
         .index("by_url", ["url"])
+        .index("by_slug", ["slug"])
         .index("by_platform", ["platform"])
         .index("by_status", ["status"])
         .index("by_platform_and_status", ["platform", "status"])
         .index("by_is_mnc", ["is_mnc"])
         .index("by_prize_amount", ["prize_amount"]),
+
+    // Per-user library. Kept as their own tables rather than arrays on the user
+    // document so they can grow without hitting the 1MB document limit.
+    savedHackathons: defineTable({
+        userId: v.id("users"),
+        hackathonId: v.id("hackathons"),
+        savedAt: v.number(),
+    })
+        .index("by_userId", ["userId"])
+        .index("by_userId_and_hackathonId", ["userId", "hackathonId"]),
+
+    // Registration tracking. `startedAt` is recorded when the user clicks
+    // Apply Now and is sent to the official site. `selfReportedAt` is set only
+    // when the user says they finished registering; HackkyHub cannot verify it.
+    registrations: defineTable({
+        userId: v.id("users"),
+        hackathonId: v.id("hackathons"),
+        startedAt: v.number(),
+        selfReportedAt: v.optional(v.number()),
+    })
+        .index("by_userId_and_hackathonId", ["userId", "hackathonId"])
+        .index("by_userId_and_startedAt", ["userId", "startedAt"]),
+
+    // Details the user chose themselves. Kept apart from the auth `users`
+    // table because Convex Auth overwrites users.name/image with the provider
+    // profile on every Google/GitHub sign-in.
+    profiles: defineTable({
+        userId: v.id("users"),
+        displayName: v.optional(v.string()),
+        headline: v.optional(v.string()),
+        location: v.optional(v.string()),
+        updatedAt: v.number(),
+    }).index("by_userId", ["userId"]),
+
+    hackathonViews: defineTable({
+        userId: v.id("users"),
+        hackathonId: v.id("hackathons"),
+        viewedAt: v.number(),
+    })
+        .index("by_userId_and_hackathonId", ["userId", "hackathonId"])
+        .index("by_userId_and_viewedAt", ["userId", "viewedAt"]),
 });

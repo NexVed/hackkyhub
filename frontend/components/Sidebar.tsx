@@ -6,11 +6,20 @@ import { Home, Trophy, Users, ChevronDown, Sun, Moon, LayoutDashboard, Settings,
 import { useAppDispatch, useAppSelector } from '@/lib/store';
 import { usePathname, useRouter } from 'next/navigation';
 import { setIsCollapsed, toggleIsCollapsed, setIsTeamsOpen, toggleIsTeamsOpen, setActiveAction, setActiveNav } from '@/lib/store/sidebarSlice';
+import { useAuthActions } from '@convex-dev/auth/react';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { displayName } from '@/lib/profile';
+import { UserAvatar } from '@/components/profile/UserAvatar';
 
 export function Sidebar() {
     const dispatch = useAppDispatch();
     const router = useRouter();
     const pathname = usePathname();
+    const { signOut } = useAuthActions();
+    const viewer = useQuery(api.users.viewer, {});
+    const userName = displayName(viewer);
+    const userDetail = viewer?.location ?? viewer?.email ?? '';
     const { isCollapsed, isTeamsOpen, activeAction, activeNav } = useAppSelector((state) => state.sidebar);
     const routeNav = pathname.startsWith('/dashboard/Profile') ? 'profile'
         : pathname.startsWith('/dashboard/Settings') ? 'settings'
@@ -331,21 +340,32 @@ export function Sidebar() {
                 <div className={`flex ${isCollapsed ? 'flex-col items-center justify-center pb-[3px] pt-1 px-1 gap-2' : 'items-center justify-between p-2'} rounded-xl hover:bg-white/20 dark:hover:bg-white/5 transition-colors cursor-pointer group`}>
                     <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'gap-3'}`}>
                         <div className="relative shrink-0">
-                            <img src="https://i.pravatar.cc/150?u=vitaliy" alt="Vitaliy D." className="w-10 h-10 rounded-full border-2 border-white/50 dark:border-white/20 shadow-md" />
+                            <div className="w-10 h-10 rounded-full p-[2px] bg-gradient-to-br from-violet-500 via-indigo-500 to-teal-400 shadow-md">
+                                <UserAvatar
+                                    name={userName}
+                                    image={viewer?.image ?? null}
+                                    className="font-display w-full h-full rounded-full bg-white dark:bg-[#0d0e1a] text-[13px] italic font-semibold text-slate-900 dark:text-white"
+                                />
+                            </div>
                             <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#27C93F] border-2 border-white dark:border-slate-800"></div>
                         </div>
                         {!isCollapsed && (
                             <div className="flex flex-col min-w-0">
-                                <span className="font-semibold text-sm truncate opacity-100 transition-opacity">Vitaliy D.</span>
-                                <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate opacity-100 transition-opacity">Pro Member</span>
+                                <span className="font-display font-semibold text-sm truncate opacity-100 transition-opacity">{userName ?? 'Your account'}</span>
+                                <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate opacity-100 transition-opacity">{userDetail}</span>
                             </div>
                         )}
                     </div>
 
                     {/* Logout Button */}
                     <button
+                        onClick={async () => {
+                            await signOut();
+                            router.push('/login');
+                        }}
                         className={`flex items-center justify-center ${isCollapsed ? 'w-10 h-10 mt-1 mb-2' : 'w-8 h-8'} rounded-lg bg-[#F04C68] text-white shadow-sm transition-all shrink-0 hover:scale-105`}
                         title="Logout"
+                        aria-label="Log out"
                     >
                         <LogOut className="w-4 h-4 ml-0.5" strokeWidth={2.5} />
                     </button>
