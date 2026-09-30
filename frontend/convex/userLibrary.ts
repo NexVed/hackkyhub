@@ -217,7 +217,7 @@ export const getMyActivity = query({
     const userId = await getAuthUserId(ctx);
     if (userId === null) return null;
 
-    const days = Math.min(180, Math.max(7, Math.floor(args.days ?? 84)));
+    const days = Math.min(366, Math.max(7, Math.floor(args.days ?? 365)));
     const since = Date.now() - days * DAY_MS;
 
     const views = await ctx.db

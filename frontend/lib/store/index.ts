@@ -1,12 +1,17 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import sidebarReducer from './sidebarSlice';
+import dashboardReducer from './dashboardSlice';
+import { dashboardApi } from './dashboardApi';
 
 export const makeStore = () => {
     return configureStore({
         reducer: {
             sidebar: sidebarReducer,
+            dashboard: dashboardReducer,
+            [dashboardApi.reducerPath]: dashboardApi.reducer,
         },
+        middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(dashboardApi.middleware),
     });
 };
 

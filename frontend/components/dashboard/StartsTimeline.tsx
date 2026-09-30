@@ -18,8 +18,8 @@ export function StartsTimeline({ months }: { months: { month: string; count: num
 
   return (
     <div>
-      <p className="mb-4 text-sm text-white/50">
-        <span className="font-semibold text-white">
+      <p className="mb-4 text-sm text-slate-500 dark:text-white/50">
+        <span className="font-semibold text-slate-900 dark:text-white">
           <AnimatedCounter value={total} />
         </span>{" "}
         starting in the next six months
@@ -29,11 +29,11 @@ export function StartsTimeline({ months }: { months: { month: string; count: num
           const height = (m.count / max) * 100;
           return (
             <div key={m.month} className="group flex h-full flex-1 flex-col items-center justify-end gap-2">
-              <span className="text-xs font-medium text-white/70 tabular-nums opacity-80 transition-opacity group-hover:opacity-100">
+              <span className="text-xs font-medium text-slate-700 dark:text-white/70 tabular-nums opacity-80 transition-opacity group-hover:opacity-100">
                 {m.count}
               </span>
               <div className="relative w-full flex-1">
-                <div className="absolute inset-0 rounded-xl bg-white/[0.04]" />
+                <div className="absolute inset-0 rounded-xl bg-slate-900/[0.04] dark:bg-white/[0.04]" />
                 <motion.div
                   className="absolute inset-x-0 bottom-0 rounded-xl bg-gradient-to-t from-violet-600/70 via-indigo-400/70 to-teal-300/80 shadow-[0_0_24px_-6px_rgba(139,92,246,0.7)]"
                   initial={{ height: 0 }}
@@ -42,7 +42,7 @@ export function StartsTimeline({ months }: { months: { month: string; count: num
                   transition={{ duration: 0.9, delay: 0.1 + i * 0.08, ease: [0.22, 1, 0.36, 1] }}
                 />
               </div>
-              <span className={`text-[11px] ${i === 0 ? "font-semibold text-violet-200" : "text-white/40"}`}>
+              <span className={`text-[11px] ${i === 0 ? "font-semibold text-violet-700 dark:text-violet-200" : "text-slate-500 dark:text-white/40"}`}>
                 {monthLabel(m.month)}
               </span>
             </div>

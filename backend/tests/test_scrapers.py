@@ -107,11 +107,32 @@ class ProviderTests(unittest.TestCase):
         url = "https://hackculture.com/events"
         scraper = get_scraper(url)
         html = '<article><a href="/events/build"><h2>Build</h2></a><img src="/poster.jpg"><span class="prize">₹1 lakh</span></article>'
-        with patch.object(scraper, "get_soup", return_value=BeautifulSoup("<div id='app'></div>", "lxml")), patch.object(scraper, "get_rendered_content", return_value=html):
+        with patch.object(scraper, "_api_results", return_value=[]), patch.object(scraper, "get_soup", return_value=BeautifulSoup("<div id='app'></div>", "lxml")), patch.object(scraper, "get_rendered_content", return_value=html):
             result = scraper._scrape_listing_page_all(url)
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["prize_amount"], 100000)
         self.assertEqual(result[0]["banner_url"], "https://hackculture.com/poster.jpg")
+
+    def test_hackculture_current_public_feed_excludes_ended_and_non_hackathons(self):
+        url = "https://hackculture.io/programs"
+        scraper = get_scraper(url)
+        response = Mock()
+        response.json.return_value = [
+            {"name": "Community Build", "slug": "community-build", "type": "hackathon", "start_datetime": "2099-10-01T10:00:00Z", "end_datetime": "2099-10-02T10:00:00Z", "branding": {"cover_photo": "https://cdn.test/banner.webp", "logo": "https://cdn.test/logo.webp"}, "location": {"name": "Chandigarh University"}, "organizer_name": "GDG", "total_participants": 7, "total_views": 127, "mode": "offline"},
+            {"name": "Ended", "slug": "ended", "type": "hackathon", "end_datetime": "2020-10-02"},
+            {"name": "Workshop", "slug": "workshop", "type": "workshop"},
+        ]
+        with patch.object(scraper.session, "get", return_value=response) as fetch:
+            result = scrape_url_all(url)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["url"], "https://hackculture.io/hackathons/community-build")
+        self.assertEqual(result[0]["banner_url"], "https://cdn.test/banner.webp")
+        self.assertEqual(result[0]["registered_count"], 7)
+        self.assertEqual(result[0]["location"], "Chandigarh University")
+        self.assertEqual(result[0]["status"], "upcoming")
+        self.assertNotIn("registration_deadline", result[0])
+        self.assertEqual(fetch.call_args.kwargs["params"]["sort_order"], -1)
+        self.assertEqual(fetch.call_count, 1)
 
     def test_pagination_deduplicates_repeated_api_pages(self):
         scraper = get_scraper("https://devfolio.co/hackathons")
@@ -146,7 +167,7 @@ class ProviderTests(unittest.TestCase):
 class PersistenceTests(unittest.TestCase):
     def test_create_preserves_numeric_and_boolean_fields(self):
         client = Mock()
-        with patch.object(HackathonCRUD, "_get_client", return_value=client):
+        with patch.object(HackathonCRUD, "_get_client", return_value=client), patch.object(HackathonCRUD, "_write_credentials", return_value={"serviceToken": "test-token"}):
             HackathonCRUD.create_hackathon({"name": "Google Build", "url": "https://build.test", "platform": "devpost", "prizes": "$5,000", "registered_count": 20, "banner_url": "https://cdn.test/banner.png"}, "https://devpost.com/hackathons")
         name, data = client.mutation.call_args.args
         self.assertEqual(name, "hackathons:create")
@@ -158,9 +179,9 @@ class PersistenceTests(unittest.TestCase):
 
     def test_partial_update_retains_false_and_zero(self):
         client = Mock()
-        with patch.object(HackathonCRUD, "_get_client", return_value=client):
+        with patch.object(HackathonCRUD, "_get_client", return_value=client), patch.object(HackathonCRUD, "_write_credentials", return_value={"serviceToken": "test-token"}):
             HackathonCRUD.update_hackathon("id", HackathonUpdate(is_mnc=False, registered_count=0))
-        self.assertEqual(client.mutation.call_args.args[1], {"id": "id", "is_mnc": False, "registered_count": 0})
+        self.assertEqual(client.mutation.call_args.args[1], {"id": "id", "is_mnc": False, "registered_count": 0, "serviceToken": "test-token"})
 
 
 if __name__ == "__main__":

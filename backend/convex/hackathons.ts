@@ -1,9 +1,11 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireServiceToken } from "./lib/serviceAuth";
 
 // Create a new hackathon
 export const create = mutation({
     args: {
+    serviceToken: v.string(),
     slug: v.optional(v.string()),
     banner_url: v.optional(v.string()),
     logo_url: v.optional(v.string()),
@@ -30,6 +32,8 @@ export const create = mutation({
         scraped_from: v.string(),
     },
     handler: async (ctx, args) => {
+        const { serviceToken, ...data } = args;
+        requireServiceToken(serviceToken);
         // Check if hackathon with this URL already exists
         const existing = await ctx.db
             .query("hackathons")
@@ -38,7 +42,7 @@ export const create = mutation({
 
         if (existing) {
             await ctx.db.patch(existing._id, {
-                ...args,
+                ...data,
                 updated_at: new Date().toISOString(),
             });
             return await ctx.db.get(existing._id);
@@ -46,7 +50,7 @@ export const create = mutation({
 
         const now = new Date().toISOString();
         const id = await ctx.db.insert("hackathons", {
-            ...args,
+            ...data,
             created_at: now,
             updated_at: now,
         });
@@ -105,6 +109,7 @@ export const getAll = query({
 // Update a hackathon
 export const update = mutation({
     args: {
+        serviceToken: v.string(),
         id: v.id("hackathons"),
     slug: v.optional(v.string()),
     banner_url: v.optional(v.string()),
@@ -132,7 +137,8 @@ export const update = mutation({
         scraped_from: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
-        const { id, ...updates } = args;
+        const { id, serviceToken, ...updates } = args;
+        requireServiceToken(serviceToken);
 
         const existing = await ctx.db.get(id);
         if (!existing) {
@@ -155,8 +161,9 @@ export const update = mutation({
 
 // Delete a hackathon
 export const remove = mutation({
-    args: { id: v.id("hackathons") },
+    args: { id: v.id("hackathons"), serviceToken: v.string() },
     handler: async (ctx, args) => {
+        requireServiceToken(args.serviceToken);
         const existing = await ctx.db.get(args.id);
         if (!existing) {
             return false;
@@ -167,7 +174,7 @@ export const remove = mutation({
 });
 
 // Delete ALL hackathons (for clean re-scrape)
-export const deleteAll = mutation({
+export const deleteAll = internalMutation({
     args: {},
     handler: async (ctx) => {
         const all = await ctx.db.query("hackathons").collect();

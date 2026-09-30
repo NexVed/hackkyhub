@@ -23,7 +23,7 @@ export function ModeDonut({ online, offline }: { online: number; offline: number
             cy="64"
             r={RADIUS}
             fill="none"
-            stroke="rgba(255,255,255,0.08)"
+            stroke="var(--border)"
             strokeWidth="13"
           />
           {total > 0 && (
@@ -58,13 +58,13 @@ export function ModeDonut({ online, offline }: { online: number; offline: number
           )}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-semibold text-white tabular-nums">
+          <span className="text-2xl font-semibold text-slate-900 dark:text-white tabular-nums">
             <AnimatedCounter
               value={onlineShare * 100}
               format={(v) => `${Math.round(v)}%`}
             />
           </span>
-          <span className="text-[10px] uppercase tracking-[0.16em] text-white/40">online</span>
+          <span className="text-[10px] uppercase tracking-[0.16em] text-slate-500 dark:text-white/40">online</span>
         </div>
       </div>
 
@@ -89,14 +89,14 @@ function LegendRow({
 }) {
   const pct = total > 0 ? Math.round((value / total) * 100) : 0;
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5">
-      <span className="flex items-center gap-2.5 text-sm text-white/70">
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/[0.03] px-3 py-2.5">
+      <span className="flex items-center gap-2.5 text-sm text-slate-700 dark:text-white/70">
         <span className={`h-2.5 w-2.5 rounded-full ${color}`} />
         {label}
       </span>
-      <span className="text-sm font-medium text-white tabular-nums">
+      <span className="text-sm font-medium text-slate-900 dark:text-white tabular-nums">
         <AnimatedCounter value={value} />
-        <span className="ml-1.5 text-xs text-white/35">{pct}%</span>
+        <span className="ml-1.5 text-xs text-slate-500 dark:text-white/35">{pct}%</span>
       </span>
     </div>
   );

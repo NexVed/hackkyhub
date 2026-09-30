@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useQuery } from "convex/react";
 import { motion } from "motion/react";
 import { Bookmark, Building2, CalendarClock, Eye, LayoutGrid, Trophy, Wifi } from "lucide-react";
@@ -18,20 +17,26 @@ import { StartsTimeline } from "./StartsTimeline";
 import { StatCard } from "./StatCard";
 import { UniverseHero } from "./UniverseHero";
 import { EmptyNote, ListSkeleton, Panel, Skeleton } from "./primitives";
+import { useDashboardStats } from "@/lib/store/dashboardApi";
+import { useAppDispatch, useAppSelector } from "@/lib/store";
+import { setExplorerFilters } from "@/lib/store/dashboardSlice";
+import { allPlatformRows } from "@/lib/platforms";
 
 /**
  * The HackkyHub dashboard. Every number and list here is read live from
  * Convex; an empty table renders explicit empty states, never placeholders.
  */
 export function DashboardOverview() {
-  const stats = useQuery(api.analytics.getDashboardStats, {});
+  const { data: stats, isError, refetch } = useDashboardStats();
   const featured = useQuery(api.analytics.getFeatured, { limit: 4 });
   const closingSoon = useQuery(api.analytics.getClosingSoon, { limit: 5, days: 14 });
   const trending = useQuery(api.analytics.getTrending, { limit: 5 });
   const library = useQuery(api.userLibrary.getMyLibraryStats, {});
   const recentlyViewed = useQuery(api.userLibrary.listRecentlyViewed, { limit: 5 });
 
-  const [search, setSearch] = useState("");
+  const dispatch = useAppDispatch();
+  const search = useAppSelector((state) => state.dashboard.explorers.overview.search);
+  const setSearch = (search: string) => dispatch(setExplorerFilters({ scope: "overview", filters: { search } }));
   const loading = stats === undefined;
   const topPool = stats?.prize.pools[0];
 
@@ -43,7 +48,7 @@ export function DashboardOverview() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="relative min-h-full overflow-hidden bg-[#07070d]"
+      className="relative min-h-full overflow-hidden bg-dash-page"
     >
       {/* Ambient light field */}
       <div className="pointer-events-none absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-violet-600/15 blur-[130px]" />
@@ -62,8 +67,10 @@ export function DashboardOverview() {
 
         <UniverseHero stats={stats} />
 
+        {isError && <div role="alert" className="rounded-2xl border border-amber-300/20 bg-amber-400/5 p-4 text-sm text-amber-700 dark:text-amber-100">Dashboard totals are unavailable. <button onClick={() => refetch()} className="underline">Try again</button></div>}
+
         {stats?.truncated && (
-          <p className="inline-flex rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-200/90">
+          <p className="inline-flex rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-700 dark:text-amber-200/90">
             Showing the first 6,000 records. Totals are a lower bound.
           </p>
         )}
@@ -120,7 +127,7 @@ export function DashboardOverview() {
         </div>
 
         {/* Featured */}
-        <Panel title="Featured" subtitle="Largest listed prize pools still open" delay={0.05}>
+        <Panel title="Featured picks" subtitle="Four open challenges with the largest listed prize pools" delay={0.05} action={<button onClick={scrollToExplore} className="shrink-0 text-xs font-medium text-violet-700 hover:underline dark:text-violet-200">Browse all →</button>}>
           {featured === undefined ? (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {Array.from({ length: 4 }).map((_, i) => (
@@ -186,8 +193,8 @@ export function DashboardOverview() {
         </div>
 
         <div className="grid gap-5 lg:grid-cols-3">
-          <Panel title="Platforms" subtitle="Volume by source · brighter = upcoming" delay={0.05} className="lg:col-span-2">
-            {loading ? <Skeleton className="h-52" /> : <PlatformBars platforms={stats.platforms.slice(0, 7)} />}
+          <Panel title="Platforms" subtitle="All integrations · brighter = upcoming · counts reflect synced records" delay={0.05} className="lg:col-span-2">
+            {loading ? <Skeleton className="h-52" /> : <PlatformBars platforms={stats.platforms} />}
           </Panel>
           <Panel title="Prize pools" subtitle="Summed per currency, never converted" delay={0.1}>
             {loading ? (
@@ -203,15 +210,15 @@ export function DashboardOverview() {
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.07 }}
-                    className="flex items-center justify-between rounded-2xl border border-white/8 bg-gradient-to-r from-amber-400/[0.07] to-transparent px-4 py-3"
+                    className="flex items-center justify-between rounded-2xl border border-slate-200 dark:border-white/8 bg-gradient-to-r from-amber-400/[0.07] to-transparent px-4 py-3"
                   >
                     <span>
-                      <span className="block text-[11px] uppercase tracking-[0.14em] text-white/40">
+                      <span className="block text-[11px] uppercase tracking-[0.14em] text-slate-500 dark:text-white/40">
                         {pool.currency === "UNKNOWN" ? "Unlabelled" : pool.currency}
                       </span>
-                      <span className="text-xs text-white/35">{pool.count} hackathons</span>
+                      <span className="text-xs text-slate-500 dark:text-white/35">{pool.count} hackathons</span>
                     </span>
-                    <span className="text-xl font-semibold text-white tabular-nums">
+                    <span className="text-xl font-semibold text-slate-900 dark:text-white tabular-nums">
                       <AnimatedCounter value={pool.amount} format={(v) => money(v, pool.currency)} />
                     </span>
                   </motion.li>
@@ -229,9 +236,9 @@ export function DashboardOverview() {
           <Panel title="Your library" subtitle="Saved and recently opened" delay={0.05}>
             <div className="grid gap-4 lg:grid-cols-[minmax(0,260px)_1fr]">
               <div className="grid grid-cols-3 gap-3 lg:grid-cols-1">
-                <MiniStat icon={Bookmark} label="Saved" value={library.saved} accent="text-violet-300" />
-                <MiniStat icon={CalendarClock} label="Saved upcoming" value={library.savedUpcoming} accent="text-sky-300" />
-                <MiniStat icon={Eye} label="Opened" value={library.viewed} accent="text-emerald-300" />
+                <MiniStat icon={Bookmark} label="Saved" value={library.saved} accent="text-violet-700 dark:text-violet-300" />
+                <MiniStat icon={CalendarClock} label="Saved upcoming" value={library.savedUpcoming} accent="text-sky-700 dark:text-sky-300" />
+                <MiniStat icon={Eye} label="Opened" value={library.viewed} accent="text-emerald-700 dark:text-emerald-300" />
               </div>
               <div>
                 {recentlyViewed === undefined ? (
@@ -253,7 +260,8 @@ export function DashboardOverview() {
         <HackathonExplorer
           search={search}
           onClearSearch={() => setSearch("")}
-          platforms={stats?.platforms.map((p) => p.platform) ?? []}
+          platforms={stats ? allPlatformRows(stats.platforms).map((p) => p.platform) : []}
+          scope="overview"
         />
       </div>
     </motion.div>
@@ -272,12 +280,12 @@ function MiniStat({
   accent: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3.5">
+    <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-900/[0.04] dark:bg-white/[0.04] p-3.5">
       <Icon className={cn("h-4 w-4", accent)} />
-      <p className="mt-2.5 text-xl font-semibold text-white tabular-nums">
+      <p className="mt-2.5 text-xl font-semibold text-slate-900 dark:text-white tabular-nums">
         <AnimatedCounter value={value} />
       </p>
-      <p className="mt-0.5 text-[11px] uppercase tracking-[0.12em] text-white/35">{label}</p>
+      <p className="mt-0.5 text-[11px] uppercase tracking-[0.12em] text-slate-500 dark:text-white/35">{label}</p>
     </div>
   );
 }

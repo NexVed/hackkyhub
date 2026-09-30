@@ -91,7 +91,7 @@ class Hack2SkillScraper(BaseScraper):
                 "Accept": "application/json",
                 "Referer": "https://hack2skill.com/hackathons",
             }
-            resp = http_requests.get(HACK2SKILL_API_URL, params=params, headers=headers, timeout=15)
+            resp = http_requests.get(HACK2SKILL_API_URL, params=params, headers=headers, timeout=15, allow_redirects=False)
             resp.raise_for_status()
             return resp.json()
         except Exception as e:

@@ -94,7 +94,7 @@ class UnstopScraper(BaseScraper):
                 "Accept": "application/json",
                 "Referer": "https://unstop.com/hackathons",
             }
-            resp = requests.get(UNSTOP_API_URL, params=params, headers=headers, timeout=15)
+            resp = requests.get(UNSTOP_API_URL, params=params, headers=headers, timeout=15, allow_redirects=False)
             resp.raise_for_status()
             return resp.json()
         except Exception as e:

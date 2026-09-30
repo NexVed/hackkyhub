@@ -142,9 +142,9 @@ const STYLES = `
 // 2. MAGNETIC BUTTON PRIMITIVE (Zero Dependency)
 // -------------------------------------------------------------------------
 export type MagneticButtonProps = React.HTMLAttributes<HTMLElement> & {
-  as?: any;
+  as?: React.ElementType;
   href?: string;
-  onClick?: (e: React.MouseEvent<any>) => void;
+  onClick?: (e: React.MouseEvent<HTMLElement>) => void;
   children?: React.ReactNode;
   className?: string;
 };
@@ -206,9 +206,9 @@ export const MagneticButton = React.forwardRef<HTMLElement, MagneticButtonProps>
     return (
       <DynamicComponent
         ref={(node: HTMLElement | null) => {
-          (localRef as any).current = node;
-          if (typeof forwardedRef === "function") forwardedRef(node as any);
-          else if (forwardedRef) (forwardedRef as any).current = node;
+          localRef.current = node;
+          if (typeof forwardedRef === "function") forwardedRef(node);
+          else if (forwardedRef) forwardedRef.current = node;
         }}
         className={cn("cursor-pointer", className)}
         {...props}
@@ -404,7 +404,7 @@ export function CinematicFooter({
               <div className="flex flex-wrap justify-center gap-3 md:gap-6 w-full mt-2">
                 <MagneticButton
                   as={Link}
-                  href="/dashboard/MNC%20hackathons"
+                  href="/dashboard/mnc-hackathons"
                   className="footer-glass-pill px-6 py-3 rounded-full text-zinc-400 font-medium text-xs md:text-sm hover:text-white transition-colors"
                 >
                   All Hackathons

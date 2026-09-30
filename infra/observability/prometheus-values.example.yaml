@@ -1,0 +1,27 @@
+# Install in a dedicated monitoring namespace. Retention and sizing are starting
+# values; provision a StorageClass/EBS CSI driver before enabling persistence.
+grafana:
+  enabled: true
+  admin:
+    existingSecret: grafana-admin
+    userKey: username
+    passwordKey: password
+  service: { type: ClusterIP }
+  ingress: { enabled: false }
+prometheus:
+  prometheusSpec:
+    retention: 15d
+    resources:
+      requests: { cpu: 500m, memory: 2Gi }
+      limits: { memory: 4Gi }
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: [ReadWriteOnce]
+          storageClassName: gp3
+          resources: { requests: { storage: 50Gi } }
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    resources: { requests: { cpu: 100m, memory: 128Mi } }
+defaultRules: { create: true }

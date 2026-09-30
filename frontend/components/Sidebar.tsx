@@ -1,438 +1,126 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Image from 'next/image';
-import { Home, Trophy, Users, ChevronDown, Sun, Moon, LayoutDashboard, Settings, Folder, ChevronsLeft, Terminal, Code, Cpu, LogOut, User } from 'lucide-react';
-import { useAppDispatch, useAppSelector } from '@/lib/store';
-import { usePathname, useRouter } from 'next/navigation';
-import { setIsCollapsed, toggleIsCollapsed, setIsTeamsOpen, toggleIsTeamsOpen, setActiveAction, setActiveNav } from '@/lib/store/sidebarSlice';
-import { useAuthActions } from '@convex-dev/auth/react';
-import { useQuery } from 'convex/react';
-import { api } from '@/convex/_generated/api';
-import { displayName } from '@/lib/profile';
-import { UserAvatar } from '@/components/profile/UserAvatar';
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { MenuToggle } from "@/components/ui/MenuToggle";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { useQuery } from "convex/react";
+import { ChevronDown, ChevronsLeft, Compass, Folder, Home, LayoutDashboard, Loader2, LogOut, Moon, Settings, Sun, Trophy, User } from "lucide-react";
+import { api } from "@/convex/_generated/api";
+import { useAppDispatch, useAppSelector } from "@/lib/store";
+import { setActiveAction, setMobileMenuOpen, toggleIsCollapsed, toggleIsTeamsOpen } from "@/lib/store/sidebarSlice";
+import { selectTeam } from "@/lib/store/dashboardSlice";
+import { displayName } from "@/lib/profile";
+import { cn } from "@/lib/utils";
+import { UserAvatar } from "@/components/profile/UserAvatar";
+import { BrandMark } from "@/components/visuals/BrandMark";
+import { HackVishvaSignature } from "@/components/visuals/HackVishvaSignature";
+
+const navigation = [
+  { key: "home", label: "Home", mobile: "Home", path: "/dashboard/Home", icon: Home, tone: "text-rose-500 dark:text-rose-300" },
+  { key: "find", label: "Find hackathons", mobile: "Explore", path: "/dashboard/Find", icon: Compass, tone: "text-violet-600 dark:text-violet-300" },
+  { key: "hackathons", label: "MNC hackathons", mobile: "MNC", path: "/dashboard/mnc-hackathons", icon: Trophy, tone: "text-amber-600 dark:text-amber-200" },
+  { key: "teams", label: "Teams", mobile: "Teams", path: "/dashboard/Teams", icon: Folder, tone: "text-blue-600 dark:text-blue-300" },
+  { key: "dashboard", label: "Dashboard", mobile: "Stats", path: "/dashboard", icon: LayoutDashboard, tone: "text-teal-600 dark:text-teal-200" },
+  { key: "profile", label: "Profile", mobile: "Profile", path: "/dashboard/Profile", icon: User, tone: "text-pink-600 dark:text-pink-300" },
+  { key: "settings", label: "Settings", mobile: "Settings", path: "/dashboard/Settings", icon: Settings, tone: "text-indigo-600 dark:text-indigo-300" },
+] as const;
 
 export function Sidebar() {
-    const dispatch = useAppDispatch();
-    const router = useRouter();
-    const pathname = usePathname();
-    const { signOut } = useAuthActions();
-    const viewer = useQuery(api.users.viewer, {});
-    const userName = displayName(viewer);
-    const userDetail = viewer?.location ?? viewer?.email ?? '';
-    const { isCollapsed, isTeamsOpen, activeAction, activeNav } = useAppSelector((state) => state.sidebar);
-    const routeNav = pathname.startsWith('/dashboard/Profile') ? 'profile'
-        : pathname.startsWith('/dashboard/Settings') ? 'settings'
-            : pathname.startsWith('/dashboard/Teams') ? 'teams'
-                : pathname.startsWith('/dashboard/Find') ? 'find'
-                    : pathname.startsWith('/dashboard/MNC') ? 'hackathons'
-                        : pathname === '/dashboard' ? 'dashboard'
-                            : 'home';
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { signOut } = useAuthActions();
+  const viewer = useQuery(api.users.viewer, {});
+  const teams = useQuery(api.teams.listMine, {});
+  const { isCollapsed, isTeamsOpen, activeAction, isMobileMenuOpen } = useAppSelector((state) => state.sidebar);
+  const selectedTeamId = useAppSelector((state) => state.dashboard.selectedTeamId);
+  const [signingOut, setSigningOut] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const userName = displayName(viewer);
+  const active = (path: string) => path === "/dashboard" ? pathname === path : decodeURIComponent(pathname).startsWith(decodeURIComponent(path));
+  const logout = async () => {
+    setSigningOut(true); setError(null);
+    try { await signOut(); router.push("/login"); }
+    catch { setError("Could not sign out. Try again."); setSigningOut(false); }
+  };
 
-    const navigate = (nav: 'home' | 'hackathons' | 'find' | 'teams' | 'dashboard' | 'settings' | 'profile', path: string) => {
-        dispatch(setActiveNav(nav));
-        router.push(path);
+
+  const reduced = useReducedMotion();
+  const drawerRef = useRef<HTMLElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const drawer = drawerRef.current;
+    const trigger = triggerRef.current?.querySelector("button");
+    const main = document.getElementById("dashboard-content");
+    main?.setAttribute("inert", "");
+    const focusable = () => Array.from(drawer?.querySelectorAll<HTMLElement>('a[href], button:not([disabled])') ?? []);
+    focusable().find((el) => el.getAttribute("aria-label") === "Close navigation menu")?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") dispatch(setMobileMenuOpen(false));
+      if (event.key !== "Tab") return;
+      const elements = focusable();
+      const first = elements[0], last = elements.at(-1);
+      if (event.shiftKey && (document.activeElement === first || !drawer?.contains(document.activeElement))) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && (document.activeElement === last || !drawer?.contains(document.activeElement))) { event.preventDefault(); first?.focus(); }
     };
+    const breakpoint = window.matchMedia("(min-width: 768px)");
+    const onResize = () => { if (breakpoint.matches) dispatch(setMobileMenuOpen(false)); };
+    breakpoint.addEventListener("change", onResize);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      main?.removeAttribute("inert");
+      document.removeEventListener("keydown", onKey);
+      breakpoint.removeEventListener("change", onResize);
+      trigger?.focus();
+    };
+  }, [isMobileMenuOpen, dispatch]);
 
-    // Expanded State
-    return (
-        <>
-            <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center justify-between border-b border-slate-200/80 bg-white/90 px-4 text-slate-900 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-[#121212]/90 dark:text-white md:hidden">
-                <button
-                    type="button"
-                    onClick={() => navigate('home', '/dashboard/Home')}
-                    className="flex min-h-11 items-center gap-2.5 rounded-xl pr-2"
-                    aria-label="Go to dashboard home"
-                >
-                    <Image src="/favicon.ico" alt="" width={36} height={36} className="size-9 rounded-lg object-contain" />
-                    <span className="text-base font-bold tracking-tight">Hackky Hub</span>
-                </button>
-                <button
-                    type="button"
-                    onClick={() => navigate('settings', '/dashboard/Settings')}
-                    className={`grid size-11 place-items-center rounded-xl border transition-colors ${routeNav === 'settings'
-                        ? 'border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-300'
-                        : 'border-slate-200 bg-white text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300'
-                        }`}
-                    aria-label="Settings"
-                >
-                    <Settings className="size-5" />
-                </button>
-            </header>
-
-            <nav className="fixed inset-x-0 bottom-0 z-50 grid h-[calc(4.5rem+env(safe-area-inset-bottom))] grid-cols-5 border-t border-slate-200/80 bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-[#121212]/95 md:hidden" aria-label="Mobile dashboard navigation">
-                {([
-                    { nav: 'home', label: 'Home', path: '/dashboard/Home', icon: Home },
-                    { nav: 'hackathons', label: 'Events', path: '/dashboard/MNC hackathons', icon: Trophy },
-                    { nav: 'find', label: 'Find', path: '/dashboard/Find', icon: Users },
-                    { nav: 'teams', label: 'Teams', path: '/dashboard/Teams', icon: Folder },
-                    { nav: 'profile', label: 'Profile', path: '/dashboard/Profile', icon: User },
-                ] as const).map((item) => {
-                    const Icon = item.icon;
-                    const isActive = routeNav === item.nav;
-                    return (
-                        <button
-                            key={item.nav}
-                            type="button"
-                            onClick={() => navigate(item.nav, item.path)}
-                            className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold transition-colors ${isActive
-                                ? 'text-indigo-600 dark:text-indigo-300'
-                                : 'text-slate-500 dark:text-slate-400'
-                                }`}
-                            aria-current={isActive ? 'page' : undefined}
-                        >
-                            <Icon className="size-5" strokeWidth={isActive ? 2.5 : 2} />
-                            <span className="truncate">{item.label}</span>
-                        </button>
-                    );
-                })}
-            </nav>
-
-        <div className={`hidden shrink-0 relative ${isCollapsed ? 'w-[68px]' : 'w-[260px]'} h-full md:flex flex-col rounded-r-2xl bg-white/20 dark:bg-black/30 backdrop-blur-2xl border-r border-white/40 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] text-slate-800 dark:text-slate-200 z-10 transition-all duration-300 ease-in-out`}>
-
-            {/* Header / Brand */}
-            <div className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-between px-6'} pt-6 pb-2 mb-2 relative`}>
-                <div className="flex items-center gap-3.5 cursor-pointer group">
-                    <div className="relative flex items-center">
-                        <img
-                            src="/favicon.ico"
-                            alt="Hackkyhub Logo"
-                            className="w-[38px] h-[38px] rounded-[10px] object-contain drop-shadow-sm group-hover:scale-110 transition-transform duration-300"
-                            onError={(e) => {
-                                // Fallback icon in case favicon doesn't exist
-                                e.currentTarget.style.display = 'none';
-                                e.currentTarget.parentElement!.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600 dark:text-white"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>';
-                            }}
-                        />
-                    </div>
-                    {!isCollapsed && (
-                        <span className="text-[19px] font-bold text-slate-900 dark:text-white tracking-wide whitespace-nowrap overflow-hidden text-ellipsis">
-                            Hackky Hub
-                        </span>
-                    )}
-                </div>
-                {/* Collapse Toggle Button */}
-                <button
-                    onClick={() => dispatch(toggleIsCollapsed())}
-                    className="absolute w-[28px] h-[28px] right-[-14px] top-[26px] z-50 flex items-center justify-center rounded-2xl bg-white dark:bg-[#1a1a1c] border border-slate-200 dark:border-slate-700/50 shadow-sm text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-all duration-300"
-                    title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-                >
-                    <ChevronsLeft className={`w-[16px] h-[16px] transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} strokeWidth={2.5} />
-                </button>
-            </div>
-
-            {/* Divider */}
-            <div className="h-[2px] bg-gradient-to-r from-transparent via-black/10 dark:via-white/10 to-transparent" />
-            {/* Main Nav */}
-            <nav className="flex-1 relative overflow-hidden flex flex-col custom-scrollbar">
-
-                {/* Animated Left Indicator */}
-                <div
-                    className="absolute left-0 w-[4px] h-[36px] rounded-r-full transition-all duration-300 ease-out z-20"
-                    style={{
-                        top: activeNav === 'home' ? '8px' :
-                            activeNav === 'hackathons' ? '48px' :
-                                activeNav === 'find' ? (isCollapsed ? '88px' : '92px') :
-                                    activeNav === 'teams' ? (isCollapsed ? '140px' : '150px') :
-                                        activeNav === 'dashboard' ? (
-                                            isCollapsed ? '198px' : (isTeamsOpen ? '368px' : '210px')
-                                        ) :
-                                            activeNav === 'settings' ? (
-                                                isCollapsed ? '238px' : (isTeamsOpen ? '410px' : '252px')
-                                            ) : '8px',
-                        backgroundColor: activeNav === 'home' ? '#ef4444' :
-                            activeNav === 'hackathons' ? '#eab308' :
-                                activeNav === 'find' ? '#a855f7' : // Purple
-                                    activeNav === 'teams' ? '#3b82f6' : // Blue
-                                        activeNav === 'dashboard' ? '#14b8a6' : // Teal
-                                            activeNav === 'settings' ? '#6366f1' : 'transparent' // Indigo
-                    }}
-                />
-
-                <div className="px-4 py-2 space-y-1.5 overflow-y-auto overflow-x-hidden">
-                    <NavItem
-                        icon={<Home className="w-[18px] h-[18px]" strokeWidth={2} />}
-                        label="Home"
-                        isActive={activeNav === 'home'}
-                        activeColor="text-red-500 dark:text-red-400"
-                        onClick={() => {
-                            dispatch(setActiveNav('home'));
-                            router.push('/dashboard/Home');
-                        }}
-                        isCollapsed={isCollapsed}
-                    />
-                    <NavItem
-                        icon={<Trophy className="w-[18px] h-[18px]" strokeWidth={2} />}
-                        label="MNC Hackathons"
-                        isActive={activeNav === 'hackathons'}
-                        activeColor="text-yellow-500 dark:text-yellow-400"
-                        onClick={() => {
-                            dispatch(setActiveNav('hackathons'));
-                            router.push('/dashboard/MNC hackathons');
-                        }}
-                        isCollapsed={isCollapsed}
-                    />
-                    <NavItem
-                        icon={<Users className="w-[18px] h-[18px]" strokeWidth={2} />}
-                        label="Find"
-                        isActive={activeNav === 'find'}
-                        activeColor="text-purple-500 dark:text-purple-400"
-                        onClick={() => {
-                            dispatch(setActiveNav('find'));
-                            router.push('/dashboard/Find');
-                        }}
-                        isCollapsed={isCollapsed}
-                    />
-
-                    {/* Teams Dropdown */}
-                    <div className="mt-4 relative">
-                        <button
-                            title={isCollapsed ? "Teams" : undefined}
-                            onClick={() => {
-                                if (isCollapsed) {
-                                    dispatch(setIsCollapsed(false));
-                                    dispatch(setIsTeamsOpen(true));
-                                } else {
-                                    dispatch(toggleIsTeamsOpen());
-                                }
-                                dispatch(setActiveNav('teams'));
-                                router.push('/dashboard/Teams');
-                            }}
-                            className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-between px-3'} py-2.5 text-sm font-semibold rounded-xl border shadow-sm transition-all group ${activeNav === 'teams'
-                                ? 'bg-white/40 dark:bg-white/10 border-blue-200/50 dark:border-blue-500/20'
-                                : 'bg-white/30 dark:bg-white/10 border-white/50 dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/15'
-                                }`}
-                        >
-                            <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
-                                <Folder className={`w-[18px] h-[18px] transition-all ${activeNav === 'teams'
-                                    ? 'text-blue-500 dark:text-blue-400 fill-blue-500/20'
-                                    : 'text-blue-600 dark:text-blue-400 group-hover:fill-blue-600/20'
-                                    }`} strokeWidth={2.5} />
-                                {!isCollapsed && (
-                                    <span className={activeNav === 'teams' ? 'text-blue-600 dark:text-blue-300' : 'text-blue-900 dark:text-blue-100'}>
-                                        Teams
-                                    </span>
-                                )}
-                            </div>
-                            {!isCollapsed && (
-                                <ChevronDown className={`w-[18px] h-[18px] transition-transform duration-300 ${isTeamsOpen ? '' : '-rotate-90'} ${activeNav === 'teams' ? 'text-blue-500 dark:text-blue-400' : 'text-blue-600 dark:text-blue-400'
-                                    }`} strokeWidth={2.5} />
-                            )}
-                        </button>
-
-                        {!isCollapsed && (
-                            <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${isTeamsOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
-                                <div className="overflow-hidden">
-                                    {/* Nested Tree List */}
-                                    <div className="flex flex-col ml-[25px] relative mt-0.5">
-                                        <TreeItem title="Algorithm Aces" icon={<Terminal className="w-[18px] h-[18px]" strokeWidth={2} />} isActive={true} status="online" />
-                                        <TreeItem title="Pixel Perfect" icon={<Code className="w-[18px] h-[18px]" strokeWidth={2} />} status="offline" />
-                                        <TreeItem title="Code Crushers" icon={<Cpu className="w-[18px] h-[18px]" strokeWidth={2} />} isLast={true} status="online" />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="pt-2 transition-all duration-300" />
-
-                    <NavItem
-                        icon={<LayoutDashboard className="w-[18px] h-[18px]" strokeWidth={2} />}
-                        label="Dashboard"
-                        isActive={activeNav === 'dashboard'}
-                        activeColor="text-teal-500 dark:text-teal-400"
-                        onClick={() => {
-                            dispatch(setActiveNav('dashboard'));
-                            router.push('/dashboard');
-                        }}
-                        isCollapsed={isCollapsed}
-                    />
-                    <NavItem
-                        icon={<User className="w-[18px] h-[18px]" strokeWidth={2} />}
-                        label="Profile"
-                        isActive={activeNav === 'profile'}
-                        activeColor="text-pink-500 dark:text-pink-400"
-                        onClick={() => {
-                            dispatch(setActiveNav('profile'));
-                            router.push('/dashboard/Profile');
-                        }}
-                        isCollapsed={isCollapsed}
-                    />
-                    <NavItem
-                        icon={<Settings className="w-[18px] h-[18px]" strokeWidth={2} />}
-                        label="Settings"
-                        isActive={activeNav === 'settings'}
-                        activeColor="text-indigo-500 dark:text-indigo-400"
-                        onClick={() => {
-                            dispatch(setActiveNav('settings'));
-                            router.push('/dashboard/Settings');
-                        }}
-                        isCollapsed={isCollapsed}
-                    />
-                </div>
-            </nav>
-
-            {isCollapsed ? (
-                <div className="mx-auto mt-auto mb-4 relative flex flex-col items-center p-[6px] w-[46px] h-[100px] bg-[#f0f2f5] dark:bg-[#202022] rounded-full shadow-[inset_0_1px_4px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_2px_6px_rgba(0,0,0,0.4)]">
-                    {/* Active Highlight Positioner Vertical */}
-                    <div
-                        className="absolute left-[6px] right-[6px] h-[42px] bg-white dark:bg-[#2a2a2d] rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-transform duration-300 ease-out z-0"
-                        style={{ transform: activeAction === 'sun' ? 'translateY(0)' : 'translateY(100%)' }}
-                    />
-                    <button
-                        title="Light Mode"
-                        onClick={() => dispatch(setActiveAction('sun'))}
-                        className={`relative z-10 w-full h-1/2 flex items-center justify-center rounded-full transition-colors duration-300 ${activeAction === 'sun'
-                            ? 'text-slate-900 dark:text-white'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                            }`}
-                    >
-                        <Sun className="w-[18px] h-[18px]" strokeWidth={2.5} />
-                    </button>
-                    <button
-                        title="Dark Mode"
-                        onClick={() => dispatch(setActiveAction('moon'))}
-                        className={`relative z-10 w-full h-1/2 flex items-center justify-center rounded-full transition-colors duration-300 ${activeAction === 'moon'
-                            ? 'text-slate-900 dark:text-white'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                            }`}
-                    >
-                        <Moon className="w-[18px] h-[18px]" strokeWidth={2.5} />
-                    </button>
-                </div>
-            ) : (
-                <div className="mx-4 mt-auto mb-2 relative flex flex-row items-center p-[5px] bg-slate-100/80 dark:bg-[#202022] rounded-full shadow-[inset_0_1px_4px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_2px_6px_rgba(0,0,0,0.4)]">
-                    {/* Active Highlight Positioner */}
-                    <div
-                        className="absolute top-[5px] bottom-[5px] w-[calc(50%-5px)] bg-white dark:bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-transform duration-300 ease-out z-0"
-                        style={{ transform: activeAction === 'sun' ? 'translateX(0)' : 'translateX(100%)' }}
-                    />
-
-                    <button
-                        onClick={() => dispatch(setActiveAction('sun'))}
-                        className={`relative z-10 w-1/2 flex items-center justify-center gap-2 py-2 text-[14px] font-semibold transition-colors duration-300 ${activeAction === 'sun'
-                            ? 'text-slate-900'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                            }`}
-                    >
-                        <Sun className="w-[16px] h-[16px]" strokeWidth={2.5} />
-                        <span>Light</span>
-                    </button>
-
-                    <button
-                        onClick={() => dispatch(setActiveAction('moon'))}
-                        className={`relative z-10 w-1/2 flex items-center justify-center gap-2 py-2 text-[14px] font-semibold transition-colors duration-300 ${activeAction === 'moon'
-                            ? 'text-slate-900'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                            }`}
-                    >
-                        <Moon className="w-[16px] h-[16px]" strokeWidth={2.5} />
-                        <span>Dark</span>
-                    </button>
-                </div>
-            )}
-
-            {/* Divider */}
-            <div className="h-px bg-gradient-to-r from-transparent via-black/10 dark:via-white/10 to-transparent my-1 mx-4" />
-
-            {/* Bottom User / Settings */}
-            <div className={`p-2 flex ${isCollapsed ? 'flex-col items-center' : 'flex-col'} gap-2`}>
-                <div className={`flex ${isCollapsed ? 'flex-col items-center justify-center pb-[3px] pt-1 px-1 gap-2' : 'items-center justify-between p-2'} rounded-xl hover:bg-white/20 dark:hover:bg-white/5 transition-colors cursor-pointer group`}>
-                    <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'gap-3'}`}>
-                        <div className="relative shrink-0">
-                            <div className="w-10 h-10 rounded-full p-[2px] bg-gradient-to-br from-violet-500 via-indigo-500 to-teal-400 shadow-md">
-                                <UserAvatar
-                                    name={userName}
-                                    image={viewer?.image ?? null}
-                                    className="font-display w-full h-full rounded-full bg-white dark:bg-[#0d0e1a] text-[13px] italic font-semibold text-slate-900 dark:text-white"
-                                />
-                            </div>
-                            <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#27C93F] border-2 border-white dark:border-slate-800"></div>
-                        </div>
-                        {!isCollapsed && (
-                            <div className="flex flex-col min-w-0">
-                                <span className="font-display font-semibold text-sm truncate opacity-100 transition-opacity">{userName ?? 'Your account'}</span>
-                                <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate opacity-100 transition-opacity">{userDetail}</span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Logout Button */}
-                    <button
-                        onClick={async () => {
-                            await signOut();
-                            router.push('/login');
-                        }}
-                        className={`flex items-center justify-center ${isCollapsed ? 'w-10 h-10 mt-1 mb-2' : 'w-8 h-8'} rounded-lg bg-[#F04C68] text-white shadow-sm transition-all shrink-0 hover:scale-105`}
-                        title="Logout"
-                        aria-label="Log out"
-                    >
-                        <LogOut className="w-4 h-4 ml-0.5" strokeWidth={2.5} />
-                    </button>
-                </div>
-            </div>
-
-        </div >
-        </>
-    );
-}
-
-function NavItem({
-    icon,
-    label,
-    isActive = false,
-    activeColor = "text-indigo-600 dark:text-indigo-400",
-    onClick,
-    isCollapsed = false
-}: {
-    icon: React.ReactNode;
-    label: string;
-    isActive?: boolean;
-    activeColor?: string;
-    onClick?: () => void;
-    isCollapsed?: boolean;
-}) {
-    return (
-        <button
-            title={isCollapsed ? label : undefined}
-            onClick={onClick}
-            className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-start px-3 gap-3'} py-2 text-[14px] font-medium rounded-xl transition-all ${isActive
-                ? `bg-white/40 dark:bg-white/10 ${activeColor}`
-                : 'text-slate-600 dark:text-slate-300 hover:bg-white/30 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white'
-                }`}
-        >
-            {icon}
-            {!isCollapsed && <span>{label}</span>}
-        </button>
-    );
-}
-
-
-function TreeItem({ title, icon, isLast = false, isActive = false, status }: { title: string, icon?: React.ReactNode, isLast?: boolean, isActive?: boolean, status?: 'online' | 'offline' }) {
-    return (
-        <div className="relative group/item flex flex-col items-center justify-center">
-            {/* The curve to the item */}
-            <div className="absolute top-0 left-[-15px] w-[15px] h-[26px] border-l border-b border-indigo-200/80 dark:border-white/10 rounded-bl-[16px] z-0 transition-colors" />
-
-            {/* The continuing vertical line IF NOT LAST */}
-            {!isLast && (
-                <div className="absolute top-[14px] left-[-15px] w-px bottom-0 bg-indigo-200/80 dark:bg-white/10 z-0 transition-colors" />
-            )}
-
-            <button className={`relative z-10 flex items-center gap-3 w-full h-[46px] px-4 my-[3px] text-[15px] font-semibold rounded-[15px] outline-none transition-all duration-300 ease-out group ${isActive
-                ? 'bg-gradient-to-r from-[#f5f7fc] to-[#f8f9fc] dark:from-white/10 dark:to-transparent text-slate-800 dark:text-white shadow-[0_1px_8px_rgba(0,0,0,0.03),inset_0_0_0_1px_rgba(230,235,245,0.8)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]'
-                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/5 shadow-none hover:shadow-[inset_0_0_0_1px_rgba(230,235,245,0.5)]'
-                }`}>
-                {icon ? (
-                    <div className={`flex items-center justify-center shrink-0 transition-all duration-300 ${isActive ? 'text-slate-800 dark:text-white' : 'text-slate-400 group-hover:text-slate-500 dark:text-slate-500'}`}>
-                        {icon}
-                    </div>
-                ) : null}
-                <span className="tracking-wide truncate flex-1 text-left">{title}</span>
-                {status && (
-                    <div className={`w-2 h-2 rounded-full shrink-0 shadow-sm ${status === 'online' ? 'bg-[#27C93F] shadow-[0_0_8px_rgba(39,201,63,0.5)]' : 'bg-[#FF5F56] shadow-[0_0_8px_rgba(255,95,86,0.5)]'}`} />
-                )}
-            </button>
+  const sidebarContent = (collapsed: boolean, mobile = false) => <>
+      <div className={cn("relative flex h-24 shrink-0 items-center", collapsed ? "justify-center" : "px-5")}>
+        <Link href="/dashboard/Home" onClick={() => dispatch(setMobileMenuOpen(false))} aria-label="HackkyHub home" className="flex min-w-0 items-center gap-2.5"><BrandMark className="h-9 w-12" />{!collapsed && <span className="text-[19px] font-bold tracking-tight text-slate-900 dark:text-white">HackkyHub</span>}</Link>
+        {!mobile && <button onClick={() => dispatch(toggleIsCollapsed())} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar"} className="absolute -right-3 top-9 grid size-6 place-items-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm hover:text-slate-900 dark:border-white/15 dark:bg-[#1b1b26] dark:text-slate-400 dark:hover:text-white"><ChevronsLeft className={cn("size-3.5 transition-transform", collapsed && "rotate-180")} /></button>}
+        {mobile && <MenuToggle open onClick={() => dispatch(setMobileMenuOpen(false))} controls="mobile-dashboard-menu" className="ml-auto text-slate-700 dark:text-white" />}
+      </div>
+      <nav aria-label="Dashboard navigation" onClick={(e) => { if ((e.target as HTMLElement).closest("a")) dispatch(setMobileMenuOpen(false)); }} className="custom-scrollbar flex-1 space-y-1 overflow-y-auto overflow-x-hidden border-t border-slate-200/60 px-3 py-5 dark:border-white/5">
+        {navigation.map((item) => <div key={item.key}>
+          <div className="flex items-center gap-1">
+            <Link href={item.path} title={collapsed ? item.label : undefined} aria-label={collapsed ? item.label : undefined} aria-current={active(item.path) ? "page" : undefined} className={cn("flex min-h-11 min-w-0 flex-1 items-center rounded-xl text-sm font-medium transition-colors", collapsed ? "justify-center px-1" : "gap-3 px-3", active(item.path) ? cn("bg-violet-500/10 shadow-[inset_3px_0_0_#8b5cf6] dark:bg-violet-500/15", item.tone) : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white")}><item.icon className="size-[18px] shrink-0" />{!collapsed && <span className="truncate">{item.label}</span>}</Link>
+            {item.key === "teams" && !collapsed && <button onClick={() => dispatch(toggleIsTeamsOpen())} aria-label={isTeamsOpen ? "Hide teams" : "Show teams"} aria-expanded={isTeamsOpen} className="grid size-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5"><ChevronDown className={cn("size-4 transition-transform", !isTeamsOpen && "-rotate-90")} /></button>}
+          </div>
+          {item.key === "teams" && !collapsed && isTeamsOpen && <div className="my-2 ml-5 space-y-1 border-l border-slate-200 pl-3 dark:border-white/10">{teams === undefined ? <p className="px-2 py-2 text-xs text-slate-500">Loading teams…</p> : teams.length === 0 ? <Link href="/dashboard/Teams" className="block px-2 py-2 text-xs text-blue-500 dark:text-blue-300">Create your first team →</Link> : teams.slice(0, 3).map((team, i) => <Link key={team._id} href="/dashboard/Teams" onClick={() => dispatch(selectTeam(team._id))} className={cn("block truncate rounded-lg px-2 py-2 text-xs transition-colors hover:bg-slate-100 dark:hover:bg-white/5", active("/dashboard/Teams") && (selectedTeamId === team._id || (!selectedTeamId && i === 0)) ? "bg-blue-400/10 text-blue-600 dark:text-blue-200" : "text-slate-500 dark:text-slate-400")}>{team.name}</Link>)}</div>}
+        </div>)}
+      </nav>
+      <div className="shrink-0 space-y-3 p-3">
+        {!collapsed && <HackVishvaSignature compact className="px-2" />}
+        <div aria-label="Theme" className={cn("flex rounded-2xl bg-slate-100 p-1 dark:bg-white/5", collapsed && "flex-col")}>
+          {([{ key: "sun", label: "Light", icon: Sun }, { key: "moon", label: "Dark", icon: Moon }] as const).map(({ key, label, icon: Icon }) => <button key={key} onClick={() => dispatch(setActiveAction(key))} aria-label={`${label} theme`} aria-pressed={activeAction === key} title={collapsed ? `${label} theme` : undefined} className={cn("flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl text-xs font-semibold transition", activeAction === key ? "bg-white text-slate-900 shadow-sm dark:bg-white/10 dark:text-white" : "text-slate-500 dark:text-slate-400")}><Icon className="size-4" />{!collapsed && label}</button>)}
         </div>
-    )
+        <div className={cn("flex items-center gap-2 border-t border-slate-200/70 pt-3 dark:border-white/10", collapsed && "flex-col")}>
+          <Link href="/dashboard/Profile" onClick={() => dispatch(setMobileMenuOpen(false))} aria-label="Your profile" className={cn("flex min-w-0 flex-1 items-center gap-3 rounded-xl", collapsed && "flex-none")}><UserAvatar name={userName} image={viewer?.image ?? null} className="size-10 shrink-0 rounded-full border border-violet-300/25 bg-violet-400/10 text-sm text-violet-700 dark:text-violet-200" />{!collapsed && <div className="min-w-0"><p className="truncate text-sm font-semibold">{userName ?? "Your account"}</p><p className="truncate text-[11px] text-slate-500 dark:text-slate-400">{viewer?.location ?? viewer?.email ?? ""}</p></div>}</Link>
+          <button onClick={logout} disabled={signingOut} aria-label="Log out" title="Log out" className="grid size-9 shrink-0 place-items-center rounded-xl bg-rose-500/10 text-rose-500 transition hover:bg-rose-500/20 disabled:opacity-50 dark:text-rose-300">{signingOut ? <Loader2 className="size-4 animate-spin" /> : <LogOut className="size-4" />}</button>
+        </div>
+        {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
+      </div>
+  </>;
+  return <>
+    <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 text-slate-900 backdrop-blur-xl dark:border-white/10 dark:bg-[#101018]/95 dark:text-white md:hidden">
+      <Link href="/dashboard/Home" className="flex items-center gap-2.5" aria-label="HackkyHub home"><BrandMark className="h-9 w-12" /><span className="text-base font-bold tracking-tight">HackkyHub</span></Link>
+      <div className="flex items-center gap-2"><button onClick={() => dispatch(setActiveAction(activeAction === "moon" ? "sun" : "moon"))} className="grid size-11 place-items-center rounded-xl hover:bg-slate-100 dark:hover:bg-white/5" aria-label={activeAction === "moon" ? "Use light theme" : "Use dark theme"}>{activeAction === "moon" ? <Sun className="size-5" /> : <Moon className="size-5" />}</button><div ref={triggerRef}><MenuToggle open={isMobileMenuOpen} onClick={() => dispatch(setMobileMenuOpen(!isMobileMenuOpen))} controls="mobile-dashboard-menu" className="hover:bg-violet-500/10" /></div></div>
+    </header>
+    <AnimatePresence>
+      {isMobileMenuOpen && <>
+        <motion.div aria-hidden="true" onClick={() => dispatch(setMobileMenuOpen(false))} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : 0.2 }} className="fixed inset-0 z-60 bg-slate-950/50 backdrop-blur-sm md:hidden" />
+        <motion.aside ref={drawerRef} id="mobile-dashboard-menu" role="dialog" aria-modal="true" aria-label="Dashboard navigation" initial={{ x: reduced ? 0 : "100%", opacity: reduced ? 0 : 1 }} animate={{ x: 0, opacity: 1 }} exit={{ x: reduced ? 0 : "100%", opacity: reduced ? 0 : 1 }} transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 320, damping: 32 }} className="fixed inset-y-0 right-0 z-70 flex w-[min(340px,calc(100vw-24px))] flex-col border-l border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] text-slate-800 shadow-2xl dark:border-white/10 dark:bg-[#101018] dark:text-slate-200 md:hidden">
+          {sidebarContent(false, true)}
+        </motion.aside>
+      </>}
+    </AnimatePresence>
+    <aside className={cn("relative z-40 hidden h-full shrink-0 flex-col border-r border-slate-200/70 bg-white/80 text-slate-800 backdrop-blur-2xl transition-[width] duration-300 dark:border-white/10 dark:bg-[#101018]/90 dark:text-slate-200 md:flex", isCollapsed ? "w-[76px]" : "w-[260px]")}>
+      {sidebarContent(isCollapsed)}
+    </aside>
+  </>;
 }

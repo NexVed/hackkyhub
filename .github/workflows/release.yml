@@ -1,0 +1,89 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [staging, production]
+        default: staging
+        required: true
+permissions: { contents: read }
+concurrency:
+  group: release-${{ inputs.environment }}
+  cancel-in-progress: false
+jobs:
+  quality:
+    uses: ./.github/workflows/ci.yml
+  images:
+    needs: quality
+    if: github.ref == 'refs/heads/main'
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    permissions: { contents: read, id-token: write }
+    outputs:
+      frontend: ${{ steps.images.outputs.frontend }}
+      scraper: ${{ steps.images.outputs.scraper }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-buildx-action@v3
+      - name: Build, scan and publish immutable release images
+        id: images
+        env:
+          FRONTEND_REPOSITORY: ${{ vars.FRONTEND_REPOSITORY }}
+          SCRAPER_REPOSITORY: ${{ vars.SCRAPER_REPOSITORY }}
+          CONVEX_URL: ${{ vars.NEXT_PUBLIC_CONVEX_URL }}
+          RELEASE: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          test -n "$CONVEX_URL"
+          docker build --build-arg NEXT_PUBLIC_CONVEX_URL="$CONVEX_URL" -t "$FRONTEND_REPOSITORY:$RELEASE" frontend
+          docker build --build-arg INSTALL_BROWSER=true -t "$SCRAPER_REPOSITORY:$RELEASE" backend
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.69.3 image --exit-code 1 --severity HIGH,CRITICAL "$FRONTEND_REPOSITORY:$RELEASE"
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.69.3 image --exit-code 1 --severity HIGH,CRITICAL "$SCRAPER_REPOSITORY:$RELEASE"
+          docker push "$FRONTEND_REPOSITORY:$RELEASE"
+          docker push "$SCRAPER_REPOSITORY:$RELEASE"
+          echo "frontend=$FRONTEND_REPOSITORY:$RELEASE" >> "$GITHUB_OUTPUT"
+          echo "scraper=$SCRAPER_REPOSITORY:$RELEASE" >> "$GITHUB_OUTPUT"
+  deploy:
+    needs: images
+    environment: ${{ inputs.environment }}
+    # Ephemeral runner inside the VPC; no pull request workloads on this runner.
+    runs-on: [self-hosted, linux, hackkyhub-deploy]
+    permissions: { contents: read, id-token: write }
+    steps:
+      - uses: actions/checkout@v5
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - uses: actions/setup-node@v5
+        with: { node-version: '22' }
+      - name: Deploy frontend-owned Convex functions
+        working-directory: frontend
+        run: npm ci && npx convex deploy --yes
+        env: { CONVEX_DEPLOY_KEY: '${{ secrets.CONVEX_DEPLOY_KEY }}' }
+      - name: Render and apply Kubernetes release
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          FRONTEND_IMAGE: ${{ needs.images.outputs.frontend }}
+          SCRAPER_IMAGE: ${{ needs.images.outputs.scraper }}
+          CLUSTER: ${{ vars.EKS_CLUSTER_NAME }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          set -euo pipefail
+          aws eks update-kubeconfig --name "$CLUSTER" --region "$AWS_REGION"
+          cd "infra/k8s/overlays/$ENVIRONMENT"
+          kustomize edit set image "hackkyhub/frontend=$FRONTEND_IMAGE" "hackkyhub/scraper=$SCRAPER_IMAGE"
+          kubectl apply -k .
+          kubectl rollout status deployment/frontend -n "hackkyhub-$ENVIRONMENT" --timeout=300s
+      - name: Release smoke checks
+        env: { PUBLIC_URL: '${{ vars.PUBLIC_URL }}' }
+        run: |
+          set -euo pipefail
+          curl --fail --retry 5 "$PUBLIC_URL/api/health"
+          curl --fail --retry 5 "$PUBLIC_URL/api/dashboard/stats"

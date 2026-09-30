@@ -5,6 +5,14 @@ const MAX_TRACKS = 50;
 const MAX_TRACK_LENGTH = 300;
 const MAX_TEXT_LENGTH = 20_000;
 
+function httpUrl(value: unknown): string | undefined {
+  if (typeof value !== "string" || value.length > 2000) return undefined;
+  try {
+    const url = new URL(value);
+    return ["https:", "http:"].includes(url.protocol) && !url.username && !url.password ? url.toString() : undefined;
+  } catch { return undefined; }
+}
+
 /** Trimmed text within the size cap, or undefined when absent/blank. */
 function text(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
@@ -52,7 +60,7 @@ export const syncHackathons = internalMutation({
         typeof item !== "object" ||
         typeof item.name !== "string" ||
         typeof item.url !== "string" ||
-        typeof item.platform !== "string"
+        typeof item.platform !== "string" || !item.name.trim() || item.name.length > 500 || item.platform.length > 50 || !httpUrl(item.url)
       ) {
         skipped++;
         continue;
@@ -69,33 +77,18 @@ export const syncHackathons = internalMutation({
         platform: item.platform,
 
         slug: typeof item.slug === "string" ? item.slug : undefined,
-        description:
-          typeof item.description === "string"
-            ? item.description
-            : undefined,
+        description: text(item.description),
 
-        banner_url:
-          typeof item.banner_url === "string"
-            ? item.banner_url
-            : undefined,
+        banner_url: httpUrl(item.banner_url),
 
-        logo_url:
-          typeof item.logo_url === "string"
-            ? item.logo_url
-            : undefined,
+        logo_url: httpUrl(item.logo_url),
 
-        platform_logo:
-          typeof item.platform_logo === "string"
-            ? item.platform_logo
-            : undefined,
+        platform_logo: httpUrl(item.platform_logo),
 
-        redirect_url:
-          typeof item.redirect_url === "string"
-            ? item.redirect_url
-            : undefined,
+        redirect_url: httpUrl(item.redirect_url),
 
         prize_amount:
-          typeof item.prize_amount === "number"
+          typeof item.prize_amount === "number" && Number.isFinite(item.prize_amount) && item.prize_amount >= 0
             ? item.prize_amount
             : undefined,
 

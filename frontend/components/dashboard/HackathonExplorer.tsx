@@ -8,6 +8,10 @@ import { api } from "@/convex/_generated/api";
 import { cn } from "@/lib/utils";
 import { HackathonCard } from "./HackathonCards";
 import { EmptyNote, Panel, Skeleton } from "./primitives";
+import { useAppDispatch, useAppSelector } from "@/lib/store";
+import { resetExplorerFilters, setExplorerFilters, type ExplorerScope } from "@/lib/store/dashboardSlice";
+import { platformLabel } from "@/lib/platforms";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 type Phase = "upcoming" | "ongoing" | "completed";
 type Mode = "online" | "offline";
@@ -29,7 +33,8 @@ export function HackathonExplorer({
   platforms,
   lockMnc = false,
   title = "Hackathon explorer",
-  emptySubtitle = "Search and filter everything in Convex",
+  emptySubtitle = "Search and filter hackathons from every platform",
+  scope = "overview",
 }: {
   search: string;
   onClearSearch: () => void;
@@ -38,11 +43,17 @@ export function HackathonExplorer({
   lockMnc?: boolean;
   title?: string;
   emptySubtitle?: string;
+  scope?: ExplorerScope;
 }) {
-  const [phase, setPhase] = useState<Phase | undefined>(undefined);
-  const [mode, setMode] = useState<Mode | undefined>(undefined);
-  const [platform, setPlatform] = useState<string | undefined>(undefined);
-  const [mncOnly, setMncOnly] = useState(lockMnc);
+  const dispatch = useAppDispatch();
+  const filters = useAppSelector((state) => state.dashboard.explorers[scope]);
+  const phase = filters.phase ?? undefined;
+  const mode = filters.mode ?? undefined;
+  const platform = filters.platform ?? undefined;
+  const mncOnly = lockMnc || filters.mncOnly;
+  const setPhase = (phase: Phase | undefined) => dispatch(setExplorerFilters({ scope, filters: { phase: phase ?? null } }));
+  const setMode = (mode: Mode | undefined) => dispatch(setExplorerFilters({ scope, filters: { mode: mode ?? null } }));
+  const setPlatform = (platform: string | undefined) => dispatch(setExplorerFilters({ scope, filters: { platform: platform ?? null } }));
   const [limit, setLimit] = useState(PAGE);
 
   const debouncedSearch = useDebounced(search.trim(), 250);
@@ -89,18 +100,15 @@ export function HackathonExplorer({
           <button
             type="button"
             onClick={() => {
-              setPhase(undefined);
-              setMode(undefined);
-              setPlatform(undefined);
-              setMncOnly(lockMnc);
+              dispatch(resetExplorerFilters(scope));
               onClearSearch();
             }}
-            className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1 text-xs text-white/55 transition-colors hover:text-white"
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-white/10 px-2.5 py-1 text-xs text-slate-500 dark:text-white/55 transition-colors hover:text-slate-900 dark:hover:text-white"
           >
             <X className="h-3 w-3" /> Clear
           </button>
         ) : (
-          <SlidersHorizontal className="h-4 w-4 text-white/30" />
+          <SlidersHorizontal className="h-4 w-4 text-slate-500 dark:text-white/30" />
         )
       }
     >
@@ -116,7 +124,7 @@ export function HackathonExplorer({
           ]}
           group="phase"
         />
-        <span className="mx-1 hidden h-5 w-px bg-white/10 sm:block" />
+        <span className="mx-1 hidden h-5 w-px bg-slate-900/10 dark:bg-white/10 sm:block" />
         <ChipGroup
           value={mode}
           onChange={setMode}
@@ -131,33 +139,21 @@ export function HackathonExplorer({
         <button
           type="button"
           aria-pressed={mncOnly}
-          onClick={() => setMncOnly((v) => !v)}
+          onClick={() => dispatch(setExplorerFilters({ scope, filters: { mncOnly: !mncOnly } }))}
           className={cn(
             "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
             mncOnly
-              ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-200"
-              : "border-white/10 bg-white/[0.03] text-white/55 hover:text-white",
+              ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-200"
+              : "border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.03] text-slate-500 dark:text-white/55 hover:text-slate-900 dark:hover:text-white",
           )}
         >
           <Building2 className="h-3.5 w-3.5" /> MNC only
         </button>
         )}
         {platforms.length > 0 && (
-          <select
-            value={platform ?? ""}
-            onChange={(event) => setPlatform(event.target.value || undefined)}
-            aria-label="Filter by platform"
-            className="rounded-full border border-white/10 bg-[#0d0e1a] px-3 py-1.5 text-xs capitalize text-white/70 outline-none transition-colors hover:text-white focus:border-violet-400/50"
-          >
-            <option value="">All platforms</option>
-            {platforms.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
+          <CustomSelect value={platform ?? ""} onValueChange={(value) => setPlatform(value || undefined)} ariaLabel="Filter by platform" options={[{ value: "", label: "All platforms" }, ...platforms.map(p => ({ value: p, label: platformLabel(p) }))]} className="min-w-40 rounded-full" />
         )}
-        {loading && shown && <Loader2 className="h-4 w-4 animate-spin text-violet-300" />}
+        {loading && shown && <Loader2 className="h-4 w-4 animate-spin text-violet-700 dark:text-violet-300" />}
       </div>
 
       {shown === undefined ? (
@@ -171,8 +167,8 @@ export function HackathonExplorer({
           {activeFilters > 0
             ? "No hackathons match these filters."
             : lockMnc
-              ? "No company-hosted hackathons in Convex yet."
-              : "No hackathons in Convex yet. Run the scraper sync to fill this in."}
+              ? "No company-hosted hackathons yet. Check back for new challenges."
+              : "No hackathons listed yet. Check back for new challenges."}
         </EmptyNote>
       ) : (
         <>
@@ -192,7 +188,7 @@ export function HackathonExplorer({
                 whileTap={{ scale: 0.97 }}
                 onClick={() => setLimit((l) => l + PAGE)}
                 disabled={loading}
-                className="inline-flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.04] px-5 py-2.5 text-sm font-medium text-white/80 transition-colors hover:border-violet-300/40 hover:text-white disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 dark:border-white/12 bg-slate-900/[0.04] dark:bg-white/[0.04] px-5 py-2.5 text-sm font-medium text-slate-700 dark:text-white/80 transition-colors hover:border-violet-300/40 hover:text-slate-900 dark:hover:text-white disabled:opacity-50"
               >
                 {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                 Show more ({(shown.total - shown.items.length).toLocaleString()} left)
@@ -217,7 +213,7 @@ function ChipGroup<T extends string>({
   group: string;
 }) {
   return (
-    <div className="relative inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5">
+    <div className="relative inline-flex rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.03] p-0.5">
       {options.map((option) => {
         const active = option.value === value;
         return (
@@ -228,7 +224,7 @@ function ChipGroup<T extends string>({
             onClick={() => onChange(option.value)}
             className={cn(
               "relative z-10 rounded-full px-3 py-1 text-xs font-medium transition-colors",
-              active ? "text-[#0b0b14]" : "text-white/55 hover:text-white",
+              active ? "text-[#0b0b14]" : "text-slate-500 dark:text-white/55 hover:text-slate-900 dark:hover:text-white",
             )}
           >
             {active && (

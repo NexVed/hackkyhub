@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Query
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Query, Depends
 from typing import List, Optional
 from datetime import datetime
 import uuid
@@ -17,13 +17,14 @@ from app.cache.redis_cache import (
 )
 
 logger = logging.getLogger(__name__)
+from app.security import require_service_token, allowed_scrape_url
 router = APIRouter()
 
 # Store for tracking scraping tasks (in production, use Redis/Celery)
 scraping_tasks = {}
 
 
-@router.post("/scrape", response_model=ScrapeResponse)
+@router.post("/scrape", response_model=ScrapeResponse, dependencies=[Depends(require_service_token)])
 async def scrape_hackathons(
     request: ScrapeRequest,
     background_tasks: BackgroundTasks,
@@ -31,6 +32,8 @@ async def scrape_hackathons(
     """
     Scrape hackathon information from provided URLs
     """
+    if not all(allowed_scrape_url(url) for url in request.urls):
+        raise HTTPException(status_code=400, detail="Use HTTPS URLs from registered platforms or configured trusted hosts")
     task_id = str(uuid.uuid4())
 
     scraping_tasks[task_id] = {
@@ -55,7 +58,7 @@ async def scrape_hackathons(
     )
 
 
-@router.post("/scrape-all", response_model=ScrapeResponse)
+@router.post("/scrape-all", response_model=ScrapeResponse, dependencies=[Depends(require_service_token)])
 async def scrape_all_platforms(background_tasks: BackgroundTasks):
     """
     Scrape ALL registered hackathon platforms at once.
@@ -85,7 +88,7 @@ async def scrape_all_platforms(background_tasks: BackgroundTasks):
     )
 
 
-@router.get("/scrape/status/{task_id}")
+@router.get("/scrape/status/{task_id}", dependencies=[Depends(require_service_token)])
 async def get_scrape_status(task_id: str):
     """
     Get status of a scraping task
@@ -168,7 +171,7 @@ async def get_hackathon(hackathon_id: str):
     return hackathon
 
 
-@router.put("/hackathons/{hackathon_id}")
+@router.put("/hackathons/{hackathon_id}", dependencies=[Depends(require_service_token)])
 async def update_hackathon(
     hackathon_id: str,
     update_data: HackathonUpdate,
@@ -184,7 +187,7 @@ async def update_hackathon(
     return hackathon
 
 
-@router.delete("/hackathons/{hackathon_id}")
+@router.delete("/hackathons/{hackathon_id}", dependencies=[Depends(require_service_token)])
 async def delete_hackathon(hackathon_id: str):
     """
     Delete a hackathon

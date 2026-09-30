@@ -87,8 +87,8 @@ export function DashboardHeader({
       className="relative z-30 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
     >
       <div className="min-w-0">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-violet-200/60">{greeting()}</p>
-        <p className="font-display mt-1 truncate text-2xl italic text-white">{firstName ?? "\u00a0"}</p>
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-violet-700 dark:text-violet-200/60">{greeting()}</p>
+        <p className="font-display mt-1 truncate text-2xl italic text-slate-900 dark:text-white">{firstName ?? "\u00a0"}</p>
       </div>
 
       <div className="flex items-center gap-2.5">
@@ -100,16 +100,16 @@ export function DashboardHeader({
           }}
           className="group relative flex-1 sm:w-80 sm:flex-none"
         >
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-white/35 transition-colors group-focus-within:text-violet-300" />
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-slate-500 dark:text-white/35 transition-colors group-focus-within:text-violet-700 dark:group-focus-within:text-violet-300" />
           <input
             ref={inputRef}
             value={search}
             onChange={(event) => onSearch(event.target.value)}
             placeholder="Search hackathons, themes, orgs"
             aria-label="Search hackathons"
-            className="h-11 w-full rounded-2xl border border-white/10 bg-white/[0.04] pl-10 pr-12 text-sm text-white outline-none backdrop-blur-xl transition-all placeholder:text-white/30 focus:border-violet-400/60 focus:bg-white/[0.07] focus:shadow-[0_0_0_4px_rgba(139,92,246,0.12)]"
+            className="h-11 w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-900/[0.04] dark:bg-white/[0.04] pl-10 pr-12 text-sm text-slate-900 dark:text-white outline-none backdrop-blur-xl transition-all placeholder:text-slate-500 dark:placeholder:text-white/30 focus:border-violet-400/60 focus:bg-slate-900/[0.07] dark:focus:bg-white/[0.07] focus:shadow-[0_0_0_4px_rgba(139,92,246,0.12)]"
           />
-          <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-white/15 px-1.5 py-0.5 font-mono text-[10px] text-white/35 sm:block">
+          <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-slate-200 dark:border-white/15 px-1.5 py-0.5 font-mono text-[10px] text-slate-500 dark:text-white/35 sm:block">
             /
           </kbd>
         </form>
@@ -125,7 +125,7 @@ export function DashboardHeader({
             }}
             aria-label="Notifications"
             aria-expanded={notifOpen}
-            className="relative grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-white/70 backdrop-blur-xl transition-colors hover:text-white"
+            className="relative grid h-11 w-11 place-items-center rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-900/[0.04] dark:bg-white/[0.04] text-slate-700 dark:text-white/70 backdrop-blur-xl transition-colors hover:text-slate-900 dark:hover:text-white"
           >
             <Bell className="h-[18px] w-[18px]" />
             {alerts && alerts.length > 0 && (
@@ -142,16 +142,16 @@ export function DashboardHeader({
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -8, scale: 0.97 }}
                 transition={{ duration: 0.2 }}
-                className="absolute right-0 top-[calc(100%+10px)] w-[min(340px,calc(100vw-2rem))] origin-top-right overflow-hidden rounded-2xl border border-white/10 bg-[#0d0e1a]/95 shadow-2xl backdrop-blur-2xl"
+                className="absolute right-0 top-[calc(100%+10px)] w-[min(340px,calc(100vw-2rem))] origin-top-right overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-dash-surface/95 shadow-2xl backdrop-blur-2xl"
               >
-                <div className="border-b border-white/8 px-4 py-3">
-                  <p className="text-sm font-semibold text-white">Deadlines</p>
-                  <p className="text-xs text-white/40">Registrations closing in the next 72 hours</p>
+                <div className="border-b border-slate-200 dark:border-white/8 px-4 py-3">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Deadlines</p>
+                  <p className="text-xs text-slate-500 dark:text-white/40">Registrations closing in the next 72 hours</p>
                 </div>
                 {alerts === undefined ? (
-                  <p className="px-4 py-5 text-sm text-white/40">Loading…</p>
+                  <p className="px-4 py-5 text-sm text-slate-500 dark:text-white/40">Loading…</p>
                 ) : alerts.length === 0 ? (
-                  <p className="px-4 py-5 text-sm text-white/40">Nothing closing soon. You are all caught up.</p>
+                  <p className="px-4 py-5 text-sm text-slate-500 dark:text-white/40">Nothing closing soon. You are all caught up.</p>
                 ) : (
                   <ul className="max-h-80 overflow-y-auto py-1">
                     {alerts.map((alert) => (
@@ -159,13 +159,13 @@ export function DashboardHeader({
                         <Link
                           href={hackathonPath(alert.hackathon)}
                           onClick={() => setNotifOpen(false)}
-                          className="flex items-center justify-between gap-3 px-4 py-2.5 transition-colors hover:bg-white/[0.05]"
+                          className="flex items-center justify-between gap-3 px-4 py-2.5 transition-colors hover:bg-slate-900/[0.05] dark:hover:bg-white/[0.05]"
                         >
                           <span className="min-w-0">
-                            <span className="block truncate text-sm text-white/85">{alert.hackathon.name}</span>
-                            <span className="block text-xs capitalize text-white/35">{alert.hackathon.platform}</span>
+                            <span className="block truncate text-sm text-slate-700 dark:text-white/85">{alert.hackathon.name}</span>
+                            <span className="block text-xs capitalize text-slate-500 dark:text-white/35">{alert.hackathon.platform}</span>
                           </span>
-                          <span className="shrink-0 rounded-md border border-rose-400/30 bg-rose-500/10 px-1.5 py-0.5 text-[11px] font-medium text-rose-200">
+                          <span className="shrink-0 rounded-md border border-rose-400/30 bg-rose-500/10 px-1.5 py-0.5 text-[11px] font-medium text-rose-700 dark:text-rose-200">
                             {formatCountdown(alert.hoursLeft)}
                           </span>
                         </Link>
@@ -194,7 +194,7 @@ export function DashboardHeader({
             <UserAvatar
               name={name}
               image={viewer?.image ?? null}
-              className="font-display h-full w-full rounded-[14px] bg-[#0d0e1a] text-sm font-semibold text-white"
+              className="font-display h-full w-full rounded-[14px] bg-dash-surface text-sm font-semibold text-slate-900 dark:text-white"
             />
           </motion.button>
 
@@ -224,11 +224,11 @@ function ProfileMenu({ name, email, onNavigate }: { name: string | null; email: 
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -8, scale: 0.97 }}
       transition={{ duration: 0.2 }}
-      className="absolute right-0 top-[calc(100%+10px)] w-64 origin-top-right overflow-hidden rounded-2xl border border-white/10 bg-[#0d0e1a]/95 shadow-2xl backdrop-blur-2xl"
+      className="absolute right-0 top-[calc(100%+10px)] w-64 origin-top-right overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-dash-surface/95 shadow-2xl backdrop-blur-2xl"
     >
-      <div className="border-b border-white/8 px-4 py-3.5">
-        <p className="font-display truncate text-base text-white">{name ?? "Your account"}</p>
-        {email && <p className="truncate text-xs text-white/40">{email}</p>}
+      <div className="border-b border-slate-200 dark:border-white/8 px-4 py-3.5">
+        <p className="font-display truncate text-base text-slate-900 dark:text-white">{name ?? "Your account"}</p>
+        {email && <p className="truncate text-xs text-slate-500 dark:text-white/40">{email}</p>}
       </div>
       <div className="p-1.5">
         <MenuLink href="/dashboard/Profile" icon={User} label="Your profile" onClick={onNavigate} />
@@ -241,7 +241,7 @@ function ProfileMenu({ name, email, onNavigate }: { name: string | null; email: 
             await signOut();
             router.push("/login");
           }}
-          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-rose-300 transition-colors hover:bg-rose-500/10 disabled:opacity-50"
+          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-rose-700 dark:text-rose-300 transition-colors hover:bg-rose-500/10 disabled:opacity-50"
         >
           <LogOut className="h-4 w-4" />
           {signingOut ? "Signing out…" : "Sign out"}
@@ -266,9 +266,9 @@ function MenuLink({
     <Link
       href={href}
       onClick={onClick}
-      className={cn("flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-white/75 transition-colors hover:bg-white/[0.06] hover:text-white")}
+      className={cn("flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-white/75 transition-colors hover:bg-slate-900/[0.06] dark:hover:bg-white/[0.06] hover:text-slate-900 dark:hover:text-white")}
     >
-      <Icon className="h-4 w-4 text-white/45" />
+      <Icon className="h-4 w-4 text-slate-500 dark:text-white/45" />
       {label}
     </Link>
   );

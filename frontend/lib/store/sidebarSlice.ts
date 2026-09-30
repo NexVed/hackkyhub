@@ -3,6 +3,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 export interface SidebarState {
     isCollapsed: boolean;
     isTeamsOpen: boolean;
+    isMobileMenuOpen: boolean;
     activeAction: 'sun' | 'moon';
     activeNav: 'home' | 'hackathons' | 'find' | 'teams' | 'dashboard' | 'settings' | 'profile';
 }
@@ -10,6 +11,7 @@ export interface SidebarState {
 const initialState: SidebarState = {
     isCollapsed: false,
     isTeamsOpen: true,
+    isMobileMenuOpen: false,
     // Dark is the default look; ThemeSync overrides this from localStorage.
     activeAction: 'moon',
     activeNav: 'home',
@@ -19,6 +21,9 @@ export const sidebarSlice = createSlice({
     name: 'sidebar',
     initialState,
     reducers: {
+        setMobileMenuOpen: (state, action: PayloadAction<boolean>) => {
+            state.isMobileMenuOpen = action.payload;
+        },
         setIsCollapsed: (state, action: PayloadAction<boolean>) => {
             state.isCollapsed = action.payload;
         },
@@ -41,6 +46,7 @@ export const sidebarSlice = createSlice({
 });
 
 export const {
+    setMobileMenuOpen,
     setIsCollapsed,
     toggleIsCollapsed,
     setIsTeamsOpen,

@@ -133,14 +133,14 @@
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 639px) {
   .heroWordmark {
-    top: 25vh;
-    opacity: 0.78;
+    top: max(7rem, 16svh);
+    opacity: 0.95;
   }
 
   .heroWord {
-    font-size: clamp(3.15rem, 15.8vw, 6rem);
+    font-size: clamp(2.6rem, 14.4vw, 5.5rem);
   }
 
   .wordSubtitle {
@@ -149,11 +149,27 @@
     font-size: clamp(0.31rem, 1.65vw, 0.48rem);
     letter-spacing: 0.35em;
   }
+
+  .heroAnimation {
+    inset: 27svh 0 auto;
+    height: min(42svh, 23rem);
+  }
+  .heroCopy {
+    right: 1.25rem;
+    bottom: max(2rem, 5svh);
+    left: 1.25rem;
+    width: auto;
+    text-align: center;
+  }
+  .heroCopy h1 { font-size: clamp(1.7rem, 6vw, 2.2rem); line-height: 1.1; }
+  .heroCopy h1 span { display: inline; margin-left: 0.2em; }
+  .heroCopy p { margin: 0.6rem auto 0; max-width: 22rem; font-size: 0.75rem; line-height: 1.5; }
+  .heroCopy > div { margin-top: 1rem; justify-content: center; }
 }
 
 @media (max-width: 420px) {
   .brandName {
-    display: none;
+    font-size: 1rem;
   }
 
   .headerLogo {

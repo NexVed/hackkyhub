@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/store";
 import { setActiveAction } from "@/lib/store/sidebarSlice";
 
@@ -15,6 +15,7 @@ const STORAGE_KEY = "hackkyhub-theme";
 export function ThemeSync() {
   const dispatch = useAppDispatch();
   const activeAction = useAppSelector((state) => state.sidebar.activeAction);
+  const pendingTheme = useRef<"sun" | "moon" | null>(null);
 
   // Adopt the persisted choice once on mount.
   useEffect(() => {
@@ -25,11 +26,14 @@ export function ThemeSync() {
       // Private mode or blocked storage: fall back to the store default.
     }
     if (stored === "sun" || stored === "moon") {
+      pendingTheme.current = stored;
       dispatch(setActiveAction(stored));
     }
   }, [dispatch]);
 
   useEffect(() => {
+    if (pendingTheme.current && pendingTheme.current !== activeAction) return;
+    pendingTheme.current = null;
     const isDark = activeAction === "moon";
     document.documentElement.classList.toggle("dark", isDark);
     document.documentElement.style.colorScheme = isDark ? "dark" : "light";

@@ -1,0 +1,33 @@
+# Optional. Apply only after provisioning Kafka and switching the CronJob
+# command to scripts/sync_to_frontend.py --transport kafka (do not run both).
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: kafka-sync, namespace: hackkyhub-staging }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: kafka-sync } }
+  template:
+    metadata: { labels: { app: kafka-sync } }
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 120
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: worker
+          image: hackkyhub/scraper:replace-with-immutable-release
+          command: [python, scripts/kafka_to_frontend.py]
+          envFrom: [{ secretRef: { name: scraper-runtime } }]
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: '1', memory: 512Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes: [{ name: tmp, emptyDir: { sizeLimit: 64Mi } }]

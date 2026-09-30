@@ -11,7 +11,7 @@ Environment (never hardcode or print these):
   FRONTEND_SYNC_URL    e.g. https://<deployment>.convex.site/api/hackathons/sync
   SCRAPER_SYNC_TOKEN   must match the frontend deployment's SCRAPER_SYNC_TOKEN
 
-Run from hackathon-scrapper/:
+Run from backend/:
   python scripts/sync_to_frontend.py            # scrape and sync
   python scripts/sync_to_frontend.py --dry-run  # scrape only, send nothing
 """
@@ -24,15 +24,18 @@ import time
 from pathlib import Path
 
 import requests
+from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.models.hackathon import HackathonCreate  # noqa: E402
 from app.scrapers import PLATFORM_URLS, get_scraper, scrape_url_all  # noqa: E402
 from app.utils.normalization import normalize_record  # noqa: E402
+from app.telemetry import initialize  # noqa: E402
 
 BATCH_SIZE = 100
 logger = logging.getLogger("sync_to_frontend")
+sentry = None
 
 
 def to_payload(record: dict, listing_url: str) -> dict:
@@ -45,9 +48,9 @@ def to_payload(record: dict, listing_url: str) -> dict:
     return data
 
 
-def scrape_all():
+def scrape_all(listing_urls=None):
     records, summary = {}, []
-    for listing_url in PLATFORM_URLS:
+    for listing_url in listing_urls or PLATFORM_URLS:
         provider = get_scraper(listing_url).__class__.__name__.replace("Scraper", "")
         row = {"provider": provider, "status": "ok", "found": 0, "valid": 0, "error": None}
         try:
@@ -91,18 +94,28 @@ def push(records, sync_url: str, token: str):
 
 
 def main():
+    backend_root = Path(__file__).resolve().parent.parent
+    load_dotenv(backend_root / ".env.local", override=True)
+    load_dotenv(backend_root / ".env")
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dry-run", action="store_true", help="scrape only; do not send anything")
+    parser.add_argument("--transport", choices=["http", "kafka"], default="http")
+    parser.add_argument("--output", type=Path, help="save a provider summary and discovered records as JSON")
+    parser.add_argument("--platform", action="append", choices=[get_scraper(url).__class__.__name__.replace("Scraper", "").lower() for url in PLATFORM_URLS], help="sync only this provider; may be repeated")
     args = parser.parse_args()
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
 
     sync_url = os.getenv("FRONTEND_SYNC_URL", "").strip()
     token = os.getenv("SCRAPER_SYNC_TOKEN", "").strip()
-    if not args.dry_run and (not sync_url or not token):
+    if not args.dry_run and args.transport == "http" and (not sync_url or not token):
         sys.exit("FRONTEND_SYNC_URL and SCRAPER_SYNC_TOKEN must both be set (or use --dry-run).")
 
     started = time.time()
-    records, summary = scrape_all()
+    listing_urls = [url for url in PLATFORM_URLS if not args.platform or get_scraper(url).__class__.__name__.replace("Scraper", "").lower() in args.platform]
+    records, summary = scrape_all(listing_urls)
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps({"providers": summary, "records": records}, indent=2), encoding="utf-8")
     for row in summary:
         print(f"{row['provider']:<12} {row['status']:<7} found={row['found']:<4} valid={row['valid']:<4} "
               f"{row['error'] or ''}", flush=True)
@@ -111,9 +124,30 @@ def main():
     if args.dry_run:
         print("dry run: nothing sent")
         return
-    totals = push(records, sync_url, token)
+    if not records:
+        raise RuntimeError("Ingestion produced zero valid records; inspect provider summaries")
+    failed = [row["provider"] for row in summary if row["status"] == "failed"]
+    if failed and sentry:
+        sentry.capture_message("Ingestion provider failures: " + ", ".join(failed), level="warning")
+    if args.transport == "kafka":
+        from app.kafka_transport import publish
+        totals = publish(records)
+    else:
+        totals = push(records, sync_url, token)
     print(f"sync complete: {totals}")
 
 
 if __name__ == "__main__":
-    main()
+    # Load credentials before instrumentation, including when invoked locally.
+    load_dotenv(Path(__file__).resolve().parent.parent / ".env.local", override=True)
+    load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+    sentry = initialize()
+    try:
+        main()
+    except Exception as exc:
+        if sentry:
+            sentry.capture_exception(exc)
+        raise
+    finally:
+        if sentry:
+            sentry.flush(timeout=5)

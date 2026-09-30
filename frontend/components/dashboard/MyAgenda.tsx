@@ -54,7 +54,7 @@ export function MyAgenda() {
         delay={0.05}
         action={
           registrations && registrations.length > 0 ? (
-            <span className="text-xs text-white/40">{registrations.length} tracked</span>
+            <span className="text-xs text-slate-500 dark:text-white/40">{registrations.length} tracked</span>
           ) : null
         }
       >
@@ -78,7 +78,7 @@ export function MyAgenda() {
           </ul>
         )}
         {registrations && registrations.length > 0 && (
-          <p className="mt-3 flex items-center gap-1.5 text-[11px] text-white/35">
+          <p className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-white/35">
             <CircleDashed className="h-3 w-3" /> started ·
             <UserCheck className="h-3 w-3" /> self-reported, not verified by HackkyHub
           </p>

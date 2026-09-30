@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from "react";
+
+const cssVariables = (style: React.CSSProperties & { [key: `--${string}`]: string | number }) => style;
 import { Orbit as OrbitIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -354,10 +356,10 @@ export const SolarSystem = React.forwardRef<HTMLDivElement, SolarSystemProps>(
         {/* Tiltable Orbit Container (handles 3D tilt coordinates) */}
         <div 
           className="absolute w-[360px] h-[360px] md:w-[940px] md:h-[940px] flex items-center justify-center"
-          style={{
+          style={cssVariables({
             transform: "rotateX(65deg) rotateY(-10deg)",
             transformStyle: "preserve-3d",
-          }}
+          })}
         >
           {/* 
             ======================================================================
@@ -367,10 +369,10 @@ export const SolarSystem = React.forwardRef<HTMLDivElement, SolarSystemProps>(
           */}
           <div 
             className="absolute w-[100px] h-[100px] md:w-[130px] md:h-[130px] flex items-center justify-center z-20 pointer-events-none"
-            style={{
+            style={cssVariables({
               transform: "rotateY(10deg) rotateX(-65deg)",
               transformStyle: "preserve-3d",
-            }}
+            })}
           >
             {/* Glowing aura */}
             <div className="absolute w-[90px] h-[90px] md:w-[120px] md:h-[120px] rounded-full filter blur-xl animate-custom-sun-pulse z-10 bg-white/10" />
@@ -392,7 +394,7 @@ export const SolarSystem = React.forwardRef<HTMLDivElement, SolarSystemProps>(
               )
             ) : (
               <div className="w-14 h-14 md:w-20 md:h-20 rounded-full border border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.1)] z-20 bg-zinc-950 flex items-center justify-center p-2 relative">
-                <OrbitIcon className="w-8 h-8 text-zinc-300 animate-spin" style={{ animationDuration: '10s' }} />
+                <OrbitIcon className="w-8 h-8 text-zinc-300 animate-spin" style={cssVariables({ animationDuration: '10s' })} />
               </div>
             )}
 
@@ -406,16 +408,16 @@ export const SolarSystem = React.forwardRef<HTMLDivElement, SolarSystemProps>(
             <div
               key={idx}
               className="absolute left-1/2 top-1/2 w-1 h-1 rounded-full opacity-40 pointer-events-none animate-custom-orbit"
-              style={{
+              style={cssVariables({
                 background: dust.color,
                 boxShadow: `0 0 6px ${dust.color}`,
                 animationDelay: dust.delay,
                 animationPlayState: isPaused ? "paused" : "running",
                 animationDuration: `${24 / speedMultiplier}s`,
-                ["--orbit-radius" as any]: dust.radius,
-                ["--orbit-duration" as any]: `${24 / speedMultiplier}s`,
-                ["--orbit-play-state" as any]: isPaused ? "paused" : "running",
-              }}
+                ["--orbit-radius"]: dust.radius,
+                ["--orbit-duration"]: `${24 / speedMultiplier}s`,
+                ["--orbit-play-state"]: isPaused ? "paused" : "running",
+              })}
             />
           ))}
 
@@ -431,12 +433,12 @@ export const SolarSystem = React.forwardRef<HTMLDivElement, SolarSystemProps>(
                 {/* Visual Dashed Ring Line representing this orbit level */}
                 <div
                   className="absolute rounded-full border border-dashed border-zinc-700/60 pointer-events-none"
-                  style={{
+                  style={cssVariables({
                     width: `calc(2 * ${orbit.radiusClass})`,
                     height: `calc(2 * ${orbit.radiusClass})`,
                     boxShadow: "inset 0 0 25px rgba(255, 255, 255, 0.01), 0 0 25px rgba(255, 255, 255, 0.01)",
-                    ["--orbit-radius" as any]: orbit.radiusClass,
-                  }}
+                    ["--orbit-radius"]: orbit.radiusClass,
+                  })}
                 />
 
                 {/* Orbit Items / Planet Cards */}
@@ -450,27 +452,27 @@ export const SolarSystem = React.forwardRef<HTMLDivElement, SolarSystemProps>(
                     <div
                       key={item.id}
                       className="absolute left-1/2 top-1/2 w-0 h-0 pointer-events-none animate-custom-orbit"
-                      style={{
+                      style={cssVariables({
                         animationDelay: `${delayValue}s`,
                         animationDuration: `${durationValue}s`,
                         animationPlayState: isPaused ? "paused" : "running",
-                        ["--orbit-radius" as any]: orbit.radiusClass,
-                        ["--orbit-duration" as any]: `${durationValue}s`,
-                        ["--orbit-play-state" as any]: isPaused ? "paused" : "running",
-                        ["--hover-color" as any]: item.color,
+                        ["--orbit-radius"]: orbit.radiusClass,
+                        ["--orbit-duration"]: `${durationValue}s`,
+                        ["--orbit-play-state"]: isPaused ? "paused" : "running",
+                        ["--hover-color"]: item.color,
                         zIndex: isHovered ? 30 : 10,
                         transformStyle: "preserve-3d", // Crucial: preserves 3D context so children can billboard cancel correctly
-                      }}
+                      })}
                     >
                       {/* Laser beam connecting sun center with planet (activates on hover) */}
                       <div
                         className="absolute right-0 top-1/2 h-[1.5px] origin-right -translate-y-1/2 pointer-events-none transition-opacity duration-300 z-0"
-                        style={{
+                        style={cssVariables({
                           width: orbit.radiusClass,
                           opacity: isHovered ? 1 : 0,
                           background: `linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(255,255,255,0.15) 20%, ${item.color} 80%, ${item.color} 100%)`,
                           boxShadow: `0 0 8px ${item.color}, 0 0 16px ${item.color}40`,
-                        }}
+                        })}
                       />
 
                       {/* 
@@ -483,7 +485,7 @@ export const SolarSystem = React.forwardRef<HTMLDivElement, SolarSystemProps>(
                         onMouseEnter={() => setHoveredId(item.id)}
                         onMouseLeave={() => setHoveredId(null)}
                         className="orbit-logo-card animate-custom-billboard"
-                        style={{
+                        style={cssVariables({
                           animationDelay: `${delayValue}s`,
                           animationDuration: `${durationValue}s`,
                           animationPlayState: isPaused ? "paused" : "running",
@@ -492,9 +494,9 @@ export const SolarSystem = React.forwardRef<HTMLDivElement, SolarSystemProps>(
                             ? `0 0 20px rgba(0, 0, 0, 0.6), 0 0 15px ${item.color}35`
                             : undefined,
                           scale: isHovered ? 1.05 : 1, // Scaled on hover independently to prevent transform overriding conflicts
-                          ["--orbit-duration" as any]: `${durationValue}s`,
-                          ["--orbit-play-state" as any]: isPaused ? "paused" : "running",
-                        }}
+                          ["--orbit-duration"]: `${durationValue}s`,
+                          ["--orbit-play-state"]: isPaused ? "paused" : "running",
+                        })}
                       >
                         {/* Icon Container */}
                         {item.logoUrl ? (
@@ -508,10 +510,10 @@ export const SolarSystem = React.forwardRef<HTMLDivElement, SolarSystemProps>(
                         ) : (
                           <div 
                             className="transition-transform duration-300 shrink-0 flex items-center justify-center"
-                            style={{
+                            style={cssVariables({
                               transform: isHovered ? "scale(1.1)" : "scale(1)",
                               color: item.color,
-                            }}
+                            })}
                           >
                             {item.svg}
                           </div>

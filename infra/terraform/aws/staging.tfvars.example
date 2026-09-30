@@ -1,0 +1,11 @@
+region = "ap-south-1"
+environment = "staging"
+name = "hackkyhub"
+vpc_cidr = "10.40.0.0/16"
+# Choose a version supported in the target region at provision time.
+kubernetes_version = "REPLACE_SUPPORTED_EKS_VERSION"
+github_repository = "NexVed/hackkyhub"
+operator_role_arn = "arn:aws:iam::REPLACE_ACCOUNT:role/REPLACE_OPERATOR_ROLE"
+node_instance_type = "t3.large"
+node_count = 2
+nat_ha = false

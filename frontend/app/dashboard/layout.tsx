@@ -1,4 +1,5 @@
 import { Sidebar } from '@/components/Sidebar';
+import { DashboardWelcome } from '@/components/dashboard/DashboardWelcome';
 
 export default function DashboardLayout({
     children,
@@ -6,11 +7,11 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div className="flex h-dvh min-h-0 w-full bg-[#fafafa] dark:bg-[#121212] overflow-hidden">
+        <DashboardWelcome><div className="dashboard-shell flex h-dvh min-h-0 w-full bg-dash-page overflow-hidden">
             <Sidebar />
-            <main className="min-w-0 flex-1 h-full overflow-y-auto overflow-x-hidden pt-16 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:py-0">
+            <main id="dashboard-content" className="min-w-0 flex-1 h-full overflow-y-auto overflow-x-hidden pt-16 pb-[env(safe-area-inset-bottom)] md:py-0">
                 {children}
             </main>
-        </div>
+        </div></DashboardWelcome>
     );
 }

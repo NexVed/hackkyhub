@@ -63,6 +63,13 @@ async def init_db():
 
 class HackathonCRUD:
     @staticmethod
+    def _write_credentials() -> dict:
+        token = os.getenv("SCRAPER_API_TOKEN") or os.getenv("SCRAPER_SYNC_TOKEN")
+        if not token:
+            raise RuntimeError("Scraper administration is not configured")
+        return {"serviceToken": token}
+
+    @staticmethod
     def _get_client() -> ConvexClient:
         return get_convex_client()
 
@@ -77,7 +84,7 @@ class HackathonCRUD:
             data = HackathonCreate.model_validate(normalized).model_dump(exclude_none=True)
             data["scraped_from"] = scraped_from
 
-            result = client.mutation("hackathons:create", data)
+            result = client.mutation("hackathons:create", {**data, **HackathonCRUD._write_credentials()})
             return result
         except Exception as e:
             logger.error(f"Error creating hackathon: {e}")
@@ -115,7 +122,7 @@ class HackathonCRUD:
                         data[key] = value.isoformat()
                     else:
                         data[key] = value
-            return client.mutation("hackathons:update", data)
+            return client.mutation("hackathons:update", {**data, **HackathonCRUD._write_credentials()})
         except Exception as e:
             logger.error(f"Error updating hackathon {hackathon_id}: {e}")
             return None
@@ -154,7 +161,7 @@ class HackathonCRUD:
         """Delete hackathon by ID"""
         client = HackathonCRUD._get_client()
         try:
-            return client.mutation("hackathons:remove", {"id": hackathon_id})
+            return client.mutation("hackathons:remove", {"id": hackathon_id, **HackathonCRUD._write_credentials()})
         except Exception as e:
             logger.error(f"Error deleting hackathon {hackathon_id}: {e}")
             return False

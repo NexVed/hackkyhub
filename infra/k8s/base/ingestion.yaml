@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata: { name: ingestion }
+spec:
+  schedule: "0 */6 * * *"
+  timeZone: Etc/UTC
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 900
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 1800
+      backoffLimit: 2
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata: { labels: { app: ingestion } }
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext: { runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, fsGroup: 10001, seccompProfile: { type: RuntimeDefault } }
+          containers:
+            - name: ingestion
+              image: hackkyhub/scraper:replace-with-immutable-release
+              envFrom: [{ secretRef: { name: scraper-runtime } }]
+              resources:
+                requests: { cpu: 500m, memory: 512Mi }
+                limits: { cpu: "2", memory: 2Gi }
+              securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+              volumeMounts:
+                - { name: tmp, mountPath: /tmp }
+                - { name: shm, mountPath: /dev/shm }
+          volumes:
+            - { name: tmp, emptyDir: { sizeLimit: 512Mi } }
+            - { name: shm, emptyDir: { medium: Memory, sizeLimit: 256Mi } }

@@ -11,6 +11,7 @@ import { Panel, Skeleton, ease } from "@/components/dashboard/primitives";
 import { UserAvatar } from "@/components/profile/UserAvatar";
 import { displayName, providerLabel } from "@/lib/profile";
 import { cn } from "@/lib/utils";
+import { SOCIAL_PLATFORMS, normalizeSocialLinks, type SocialLinks } from "@/convex/lib/socialLinks";
 
 type Viewer = NonNullable<FunctionReturnType<typeof api.users.viewer>>;
 
@@ -19,20 +20,20 @@ export function ProfileSettings() {
   const viewer = useQuery(api.users.viewer, {});
 
   return (
-    <div className="relative min-h-full overflow-hidden bg-[#07070d]">
+    <div className="relative min-h-full overflow-hidden bg-dash-page">
       <div className="pointer-events-none absolute -right-32 -top-24 h-[26rem] w-[26rem] rounded-full bg-violet-600/15 blur-[130px]" />
 
       <div className="relative mx-auto max-w-3xl space-y-5 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease }}>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-violet-200/60">Settings</p>
-          <h1 className="font-display mt-1 text-3xl italic text-white sm:text-4xl">Your account</h1>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-violet-700 dark:text-violet-200/60">Settings</p>
+          <h1 className="font-display mt-1 text-3xl italic text-slate-900 dark:text-white sm:text-4xl">Your account</h1>
         </motion.div>
 
         {viewer === undefined ? (
           <Skeleton className="h-96 rounded-3xl" />
         ) : viewer === null ? (
           <Panel title="Signed out">
-            <p className="text-sm text-white/50">Sign in to edit your profile.</p>
+            <p className="text-sm text-slate-500 dark:text-white/50">Sign in to edit your profile.</p>
           </Panel>
         ) : (
           <>
@@ -52,26 +53,26 @@ function AccountPanel({ viewer }: { viewer: Viewer }) {
         <UserAvatar
           name={displayName(viewer)}
           image={viewer.image}
-          className="font-display h-14 w-14 shrink-0 rounded-full border border-white/10 bg-[#161530] text-lg italic text-white"
+          className="font-display h-14 w-14 shrink-0 rounded-full border border-slate-200 dark:border-white/10 bg-dash-surface text-lg italic text-slate-900 dark:text-white"
         />
         <div className="min-w-0 space-y-1.5">
           {viewer.email && (
-            <p className="flex items-center gap-2 truncate text-sm text-white/75">
-              <Mail className="h-4 w-4 shrink-0 text-sky-300/80" /> {viewer.email}
+            <p className="flex items-center gap-2 truncate text-sm text-slate-700 dark:text-white/75">
+              <Mail className="h-4 w-4 shrink-0 text-sky-700 dark:text-sky-300/80" /> {viewer.email}
               {viewer.emailVerified && (
-                <span className="rounded-md border border-emerald-400/30 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-200">
+                <span className="rounded-md border border-emerald-400/30 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-200">
                   verified
                 </span>
               )}
             </p>
           )}
-          <div className="flex flex-wrap items-center gap-2 text-xs text-white/45">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-white/45">
             <KeyRound className="h-3.5 w-3.5" /> Signs in with
             {viewer.providers.length === 0 ? (
-              <span className="text-white/60">unknown</span>
+              <span className="text-slate-500 dark:text-white/60">unknown</span>
             ) : (
               viewer.providers.map((provider) => (
-                <span key={provider} className="rounded-md border border-white/12 bg-white/[0.05] px-1.5 py-0.5 text-white/70">
+                <span key={provider} className="rounded-md border border-slate-200 dark:border-white/12 bg-slate-900/[0.05] dark:bg-white/[0.05] px-1.5 py-0.5 text-slate-700 dark:text-white/70">
                   {providerLabel(provider)}
                 </span>
               ))
@@ -80,7 +81,7 @@ function AccountPanel({ viewer }: { viewer: Viewer }) {
         </div>
       </div>
       {!viewer.image && (
-        <p className="mt-4 text-xs text-white/35">
+        <p className="mt-4 text-xs text-slate-500 dark:text-white/35">
           Sign in with Google or GitHub using the same email to show that account&apos;s photo here.
         </p>
       )}
@@ -93,13 +94,15 @@ function ProfileForm({ viewer }: { viewer: Viewer }) {
   const [name, setName] = useState(viewer.name ?? "");
   const [headline, setHeadline] = useState(viewer.headline ?? "");
   const [location, setLocation] = useState(viewer.location ?? "");
+  const [socialLinks, setSocialLinks] = useState<SocialLinks>({ ...viewer.socialLinks });
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [error, setError] = useState<string | null>(null);
 
   const dirty =
     name.trim() !== (viewer.name ?? "") ||
     headline.trim() !== (viewer.headline ?? "") ||
-    location.trim() !== (viewer.location ?? "");
+    location.trim() !== (viewer.location ?? "") ||
+    SOCIAL_PLATFORMS.some(p => (socialLinks[p.key] ?? "").trim() !== (viewer.socialLinks[p.key] ?? ""));
 
   const edit = (setter: (value: string) => void) => (value: string) => {
     setter(value);
@@ -112,11 +115,13 @@ function ProfileForm({ viewer }: { viewer: Viewer }) {
     setStatus("saving");
     setError(null);
     try {
-      await updateMyProfile({ displayName: name, headline, location });
+      const normalized = normalizeSocialLinks(socialLinks);
+      await updateMyProfile({ displayName: name, headline, location, socialLinks: normalized });
+      setSocialLinks(normalized);
       setStatus("saved");
     } catch (err) {
       setStatus("idle");
-      setError(err instanceof ConvexError ? String(err.data) : "Could not save. Please try again.");
+      setError(err instanceof ConvexError ? String(err.data) : err instanceof Error && err.message.includes("profile") ? err.message : "Could not save. Please try again.");
     }
   };
 
@@ -153,6 +158,11 @@ function ProfileForm({ viewer }: { viewer: Viewer }) {
           optional
         />
 
+        <fieldset className="space-y-4 border-t border-slate-200 pt-5 dark:border-white/10">
+          <legend className="pr-3 text-sm font-semibold text-slate-900 dark:text-white">Social profiles</legend>
+          <p className="text-xs text-slate-500 dark:text-white/45">Add your full profile links. Leave a field blank to remove it.</p>
+          <div className="grid gap-4 sm:grid-cols-2">{SOCIAL_PLATFORMS.map(platform => <Field key={platform.key} label={platform.label} value={socialLinks[platform.key] ?? ""} onChange={value => { setSocialLinks(prev => ({ ...prev, [platform.key]: value })); setStatus("idle"); setError(null); }} maxLength={300} placeholder={platform.placeholder} type="url" optional />)}</div>
+        </fieldset>
         <div className="flex flex-wrap items-center gap-3 pt-1">
           <motion.button
             type="submit"
@@ -169,14 +179,14 @@ function ProfileForm({ viewer }: { viewer: Viewer }) {
                 initial={{ opacity: 0, x: -6 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0 }}
-                className="inline-flex items-center gap-1.5 text-sm text-emerald-300"
+                className="inline-flex items-center gap-1.5 text-sm text-emerald-700 dark:text-emerald-300"
               >
                 <Check className="h-4 w-4" /> Saved
               </motion.span>
             )}
           </AnimatePresence>
           {error && (
-            <p role="alert" className="text-sm text-rose-300">
+            <p role="alert" className="text-sm text-rose-700 dark:text-rose-300">
               {error}
             </p>
           )}
@@ -195,6 +205,7 @@ function Field({
   required,
   optional,
   hint,
+  type = "text",
 }: {
   label: string;
   value: string;
@@ -204,30 +215,34 @@ function Field({
   required?: boolean;
   optional?: boolean;
   hint?: { text: string; action: () => void };
+  type?: "text" | "url";
 }) {
   return (
     <label className="block">
-      <span className="flex items-baseline justify-between text-sm font-medium text-white/80">
+      <span className="flex items-baseline justify-between text-sm font-medium text-slate-700 dark:text-white/80">
         <span>
-          {label} {optional && <span className="text-xs font-normal text-white/35">optional</span>}
+          {label} {optional && <span className="text-xs font-normal text-slate-500 dark:text-white/35">optional</span>}
         </span>
-        <span className={cn("text-[11px] tabular-nums", value.length >= maxLength ? "text-amber-300" : "text-white/30")}>
+        <span className={cn("text-[11px] tabular-nums", value.length >= maxLength ? "text-amber-700 dark:text-amber-300" : "text-slate-500 dark:text-white/30")}>
           {value.length}/{maxLength}
         </span>
       </span>
       <input
+        type={type}
+        autoCapitalize={type === "url" ? "none" : undefined}
+        spellCheck={type === "url" ? false : undefined}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         maxLength={maxLength}
         required={required}
         placeholder={placeholder}
-        className="mt-2 h-11 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm text-white outline-none transition-all placeholder:text-white/25 focus:border-violet-400/60 focus:bg-white/[0.07] focus:shadow-[0_0_0_4px_rgba(139,92,246,0.12)]"
+        className="mt-2 h-11 w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-900/[0.04] dark:bg-white/[0.04] px-4 text-sm text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-500 dark:placeholder:text-white/25 focus:border-violet-400/60 focus:bg-slate-900/[0.07] dark:focus:bg-white/[0.07] focus:shadow-[0_0_0_4px_rgba(139,92,246,0.12)]"
       />
       {hint && (
         <button
           type="button"
           onClick={hint.action}
-          className="mt-1.5 text-xs text-violet-200/70 underline-offset-2 hover:text-violet-100 hover:underline"
+          className="mt-1.5 text-xs text-violet-700 dark:text-violet-200/70 underline-offset-2 hover:text-violet-700 dark:hover:text-violet-100 hover:underline"
         >
           {hint.text} · use this
         </button>

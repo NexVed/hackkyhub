@@ -3,6 +3,7 @@ import type { QueryCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { ConvexError, v } from "convex/values";
+import { normalizeSocialLinks } from "./lib/socialLinks";
 
 const LIMITS = { displayName: 60, headline: 80, location: 60 } as const;
 
@@ -48,6 +49,7 @@ export const viewer = query({
       image: user.image ?? null,
       headline: profile?.headline ?? null,
       location: profile?.location ?? null,
+      socialLinks: profile?.socialLinks ?? {},
       providers,
       joinedAt: user._creationTime,
     };
@@ -63,6 +65,7 @@ export const updateMyProfile = mutation({
     displayName: v.string(),
     headline: v.optional(v.string()),
     location: v.optional(v.string()),
+    socialLinks: v.optional(v.object({ github: v.optional(v.string()), linkedin: v.optional(v.string()), reddit: v.optional(v.string()), x: v.optional(v.string()) })),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -83,11 +86,15 @@ export const updateMyProfile = mutation({
       throw new ConvexError(`Location must be at most ${LIMITS.location} characters.`);
     }
 
+    let socialLinks;
+    try { socialLinks = args.socialLinks === undefined ? undefined : normalizeSocialLinks(args.socialLinks); }
+    catch (error) { throw new ConvexError(error instanceof Error ? error.message : "Invalid social link."); }
     const fields = {
       displayName,
       headline: headline || undefined,
       location: location || undefined,
       updatedAt: Date.now(),
+      ...(socialLinks === undefined ? {} : { socialLinks }),
     };
     const existing = await profileOf(ctx, userId);
     if (existing === null) {

@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: hackkyhub
+  namespace: monitoring
+  labels: { release: monitoring }
+spec:
+  groups:
+    - name: hackkyhub.ingestion
+      rules:
+        - alert: HackkyHubIngestionJobFailed
+          expr: kube_job_status_failed{namespace=~"hackkyhub-(staging|production)",job_name=~"ingestion-.*"} > 0
+          for: 5m
+          labels: { severity: warning }
+          annotations:
+            summary: 'HackkyHub ingestion job failed'
+            description: 'Inspect the job logs, provider availability and sync credentials.'
+        - alert: HackkyHubIngestionStale
+          expr: time() - kube_cronjob_status_last_successful_time{namespace=~"hackkyhub-(staging|production)",cronjob="ingestion"} > 43200
+          for: 10m
+          labels: { severity: critical }
+          annotations:
+            summary: 'No successful ingestion for over 12 hours'
+        - alert: HackkyHubFrontendUnavailable
+          expr: kube_deployment_status_replicas_available{namespace=~"hackkyhub-(staging|production)",deployment="frontend"} < 1
+          for: 2m
+          labels: { severity: critical }
+          annotations: { summary: 'HackkyHub has no available frontend replicas' }

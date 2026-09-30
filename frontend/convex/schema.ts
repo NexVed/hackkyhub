@@ -4,6 +4,21 @@ import { authTables } from "@convex-dev/auth/server";
 
 export default defineSchema({
     ...authTables,
+    teams: defineTable({
+        ownerId: v.id("users"),
+        name: v.string(),
+        description: v.string(),
+        skills: v.array(v.string()),
+        inviteCode: v.string(),
+        hackathonId: v.optional(v.id("hackathons")),
+    }).index("by_inviteCode", ["inviteCode"]),
+    teamMembers: defineTable({
+        teamId: v.id("teams"),
+        userId: v.id("users"),
+    })
+        .index("by_userId", ["userId"])
+        .index("by_teamId", ["teamId"])
+        .index("by_teamId_and_userId", ["teamId", "userId"]),
     // New fields are optional for compatibility with already stored records.
     hackathons: defineTable({
     slug: v.optional(v.string()),
@@ -77,6 +92,7 @@ export default defineSchema({
         headline: v.optional(v.string()),
         location: v.optional(v.string()),
         updatedAt: v.number(),
+        socialLinks: v.optional(v.object({ github: v.optional(v.string()), linkedin: v.optional(v.string()), reddit: v.optional(v.string()), x: v.optional(v.string()) })),
     }).index("by_userId", ["userId"]),
 
     hackathonViews: defineTable({

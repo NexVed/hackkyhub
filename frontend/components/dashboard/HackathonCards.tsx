@@ -22,7 +22,7 @@ function ClosedBadge({ hackathon }: { hackathon: Hackathon }) {
   const [now] = useState(() => Date.now());
   if (!registrationClosed(hackathon, now)) return null;
   return (
-    <span className="rounded-md border border-white/15 bg-black/50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/60">
+    <span className="rounded-md border border-slate-200 dark:border-white/15 bg-black/50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-white/60">
       Reg closed
     </span>
   );
@@ -59,8 +59,8 @@ export function SaveButton({ hackathon, className }: { hackathon: Hackathon; cla
       className={cn(
         "grid h-8 w-8 shrink-0 place-items-center rounded-lg border backdrop-blur-md transition-colors",
         saved
-          ? "border-violet-300/50 bg-violet-500/25 text-violet-200"
-          : "border-white/15 bg-black/30 text-white/60 hover:text-white",
+          ? "border-violet-300/50 bg-violet-500/25 text-violet-700 dark:text-violet-200"
+          : "border-slate-200 dark:border-white/15 bg-white/90 dark:bg-black/30 text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white",
         className,
       )}
     >
@@ -87,7 +87,7 @@ export function HackathonRow({
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.06, duration: 0.4, ease }}
-      className="group flex items-center gap-2 rounded-2xl border border-white/8 bg-white/[0.03] p-3 transition-all hover:border-white/20 hover:bg-white/[0.06]"
+      className="group flex items-center gap-2 rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-white/[0.03] p-3 transition-all hover:border-slate-200 dark:hover:border-white/20 hover:bg-slate-900/[0.06] dark:hover:bg-white/[0.06]"
     >
       <Link href={hackathonPath(hackathon)} className="flex min-w-0 flex-1 items-center gap-3">
         {hackathon.logo_url ? (
@@ -95,18 +95,18 @@ export function HackathonRow({
           <img
             src={hackathon.logo_url}
             alt=""
-            className="h-9 w-9 shrink-0 rounded-xl border border-white/10 bg-white/5 object-cover"
+            className="h-9 w-9 shrink-0 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-900/5 dark:bg-white/5 object-cover"
           />
         ) : (
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/5 text-xs font-semibold uppercase text-white/60">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 dark:border-white/10 bg-slate-900/5 dark:bg-white/5 text-xs font-semibold uppercase text-slate-500 dark:text-white/60">
             {hackathon.platform.slice(0, 2)}
           </span>
         )}
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium text-white/90 group-hover:text-white">
+          <span className="block truncate text-sm font-medium text-slate-700 dark:text-white/90 group-hover:text-slate-900 dark:group-hover:text-white">
             {hackathon.name}
           </span>
-          <span className="block truncate text-xs text-white/35">
+          <span className="block truncate text-xs text-slate-500 dark:text-white/35">
             {hackathon.is_online ? "Online" : (hackathon.location ?? "In person")} ·{" "}
             <span className="capitalize">{hackathon.platform}</span>
           </span>
@@ -115,7 +115,7 @@ export function HackathonRow({
       <span
         className={cn(
           "shrink-0 rounded-lg border px-2 py-1 text-[11px] font-medium tabular-nums",
-          urgent ? "border-rose-400/30 bg-rose-500/10 text-rose-200" : "border-white/12 bg-white/5 text-white/60",
+          urgent ? "border-rose-400/30 bg-rose-500/10 text-rose-700 dark:text-rose-200" : "border-slate-200 dark:border-white/12 bg-slate-900/5 dark:bg-white/5 text-slate-500 dark:text-white/60",
         )}
       >
         {badge}
@@ -147,7 +147,7 @@ export function HackathonCard({
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.5, delay: (index % 8) * 0.06, ease }}
       whileHover={{ y: -5 }}
-      className="group relative flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035] transition-colors hover:border-violet-300/30"
+      className="group relative flex flex-col overflow-hidden rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.035] transition-colors hover:border-violet-300/30"
     >
       <Link
         href={hackathonPath(hackathon)}
@@ -169,12 +169,12 @@ export function HackathonCard({
             <div className="h-full w-full bg-[linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:22px_22px]" />
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0b14] via-[#0a0b14]/30 to-transparent" />
-        <div className="absolute left-3 top-3 flex items-center gap-1.5">
+        <div className="absolute inset-0 bg-gradient-to-t from-dash-surface via-dash-surface/30 to-transparent" />
+        <div className="dark absolute left-3 top-3 flex items-center gap-1.5">
           <PhaseBadge phase={phase} />
           <ClosedBadge hackathon={hackathon} />
           {hackathon.is_mnc && (
-            <span className="inline-flex items-center gap-1 rounded-md border border-emerald-400/30 bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-200">
+            <span className="inline-flex items-center gap-1 rounded-md border border-emerald-400/30 bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-200">
               <Building2 className="h-3 w-3" /> MNC
             </span>
           )}
@@ -185,27 +185,27 @@ export function HackathonCard({
       </div>
 
       <div className="relative flex flex-1 flex-col p-4">
-        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/40">
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-white/40">
           {hackathon.organizer ?? hackathon.platform}
         </p>
-        <h3 className={cn("mt-1 line-clamp-2 font-semibold text-white", size === "lg" ? "text-lg" : "text-[15px]")}>
+        <h3 className={cn("mt-1 line-clamp-2 font-semibold text-slate-900 dark:text-white", size === "lg" ? "text-lg" : "text-[15px]")}>
           {hackathon.name}
         </h3>
 
-        <div className="mt-3 space-y-1.5 text-xs text-white/50">
+        <div className="mt-3 space-y-1.5 text-xs text-slate-500 dark:text-white/50">
           {dates && (
             <p className="flex items-center gap-1.5">
-              <CalendarDays className="h-3.5 w-3.5 text-white/35" /> {dates}
+              <CalendarDays className="h-3.5 w-3.5 text-slate-500 dark:text-white/35" /> {dates}
             </p>
           )}
           <p className="flex items-center gap-1.5">
             {hackathon.is_online ? (
               <>
-                <Wifi className="h-3.5 w-3.5 text-sky-300/70" /> Online
+                <Wifi className="h-3.5 w-3.5 text-sky-700 dark:text-sky-300/70" /> Online
               </>
             ) : (
               <>
-                <MapPin className="h-3.5 w-3.5 text-amber-300/70" /> {hackathon.location ?? "In person"}
+                <MapPin className="h-3.5 w-3.5 text-amber-700 dark:text-amber-300/70" /> {hackathon.location ?? "In person"}
               </>
             )}
           </p>
@@ -214,7 +214,7 @@ export function HackathonCard({
         {hackathon.themes && hackathon.themes.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1">
             {hackathon.themes.slice(0, 3).map((theme) => (
-              <span key={theme} className="rounded-md border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-white/55">
+              <span key={theme} className="rounded-md border border-slate-200 dark:border-white/10 bg-slate-900/[0.04] dark:bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-slate-500 dark:text-white/55">
                 {theme}
               </span>
             ))}
@@ -223,14 +223,14 @@ export function HackathonCard({
 
         <div className="mt-auto flex items-center justify-between gap-3 pt-4">
           {prize ? (
-            <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold text-amber-200">
-              <Trophy className="h-4 w-4 shrink-0 text-amber-300" />
+            <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold text-amber-700 dark:text-amber-200">
+              <Trophy className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" />
               <span className="truncate">{prize}</span>
             </span>
           ) : (
-            <span className="text-xs text-white/30">Prize not listed</span>
+            <span className="text-xs text-slate-500 dark:text-white/30">Prize not listed</span>
           )}
-          <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium capitalize text-white/45 transition-colors group-hover:text-violet-200">
+          <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium capitalize text-slate-500 dark:text-white/45 transition-colors group-hover:text-violet-700 dark:group-hover:text-violet-200">
             {hackathon.platform}
             <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
           </span>

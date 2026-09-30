@@ -1,12 +1,14 @@
 "use client";
 
 import { LiquidMetal } from "@paper-design/shaders-react";
+import { useReducedMotion } from "motion/react";
 
 type LiquidMetalLogoProps = {
   className?: string;
 };
 
 export function LiquidMetalLogo({ className = "" }: LiquidMetalLogoProps) {
+  const reducedMotion = useReducedMotion();
   return (
     <div className={`relative ${className}`} aria-hidden="true">
       <LiquidMetal
@@ -20,7 +22,7 @@ export function LiquidMetalLogo({ className = "" }: LiquidMetalLogoProps) {
         shiftRed={0}
         shiftBlue={0}
         angle={76}
-        speed={0.32}
+        speed={reducedMotion ? 0 : 0.32}
         scale={0.86}
         fit="contain"
         maxPixelCount={320000}

@@ -1,22 +1,36 @@
 # Hackathon ingestion
 
-Nine provider scrapers and a custom-page fallback feed the existing Convex database and Upstash cache. The frontend Find and MNC directories read the FastAPI service through the server-only `SCRAPER_API_URL` setting.
+Nine provider scrapers and a custom-page fallback discover hackathons. The current frontend dashboard and directories read their own Convex deployment; use the authenticated frontend sync script to populate that deployment. The FastAPI service and its separate CRUD functions remain available for a scraper deployment configured with `backend/convex`.
+
+## Populate the frontend dashboard
+
+From this directory with the Python virtual environment active:
+
+```sh
+python scripts/sync_to_frontend.py
+python scripts/sync_to_frontend.py --platform hackculture
+python scripts/sync_to_frontend.py --dry-run --output provider-report.json
+```
+
+The script loads `.env.local` and `.env` from this directory. Configure `FRONTEND_SYNC_URL` as the frontend Convex site's `/api/hackathons/sync` endpoint and `SCRAPER_SYNC_TOKEN` to match the secret in that frontend Convex deployment. Tokens stay in ignored environment files. Data is validated, deduplicated and upserted by source URL in batches; no existing event is deleted. A dry run does not require the sync token.
+
+All nine providers were refreshed on September 30, 2026. HackCulture's old `.com/events` URL was replaced by [its official program directory](https://hackculture.io/programs) and the site's public `api.hackculture.io/api/v1/hackathons` card feed. The response is bounded to the latest 50 cards, filters completed events, and retains real dates, logos, banners and participant counts without inventing registration deadlines.
 
 ## Run locally
 
 1. Create a virtual environment and install `requirements.txt`.
 2. Install the optional rendered-page fallback with `python -m playwright install chromium`.
 3. Configure the scraper's existing Convex and Redis environment variables.
-4. Install the JavaScript CLI dependency from this directory with `npm ci`, then apply `convex/schema.ts` and `convex/hackathons.ts` to the scraper deployment using `npx convex dev` for development or the usual Convex production deployment process. Run the command from `hackathon-scrapper/`, not the monorepo root.
+4. For the standalone FastAPI CRUD service, install the JavaScript CLI dependency from this directory with `npm ci`, then apply `backend/convex` to its own scraper deployment. Do not replace the frontend schema with the scraper schema; the frontend owns auth, teams and user libraries.
 5. Run `python -m uvicorn app.main:app --reload` from this directory.
-6. Set `SCRAPER_API_URL=http://localhost:8000` in the frontend environment, then start Next.js.
+6. Start Next.js from `frontend/`; use the sync script above to feed its database.
 
-The frontend and scraper currently have separate Convex configurations. Keep the frontend auth tables when deploying its schema. The frontend's read-only `hackathons:getMNC` query is also available if ingestion is configured to use that deployment; the dashboard uses FastAPI by default.
+The frontend and scraper have separate Convex function configurations. The frontend's read-only directory queries use the rows synced into its deployment.
 
 ## Endpoints
 
 - `POST /api/v1/scrape-all`: discover and upsert events from all nine providers.
-- `POST /api/v1/scrape`: scrape supplied URLs; body: `{"urls":["https://example.org/event"],"force_refresh":true}`.
+- `POST /api/v1/scrape`: scrape up to 20 trusted HTTPS URLs; body: `{"urls":["https://devpost.com/hackathons"],"force_refresh":true}`.
 - `GET /api/v1/scrape/status/{task_id}`: inspect progress, saves, and provider failures.
 - `GET /api/v1/hackathons?platform=devpost&status=upcoming&skip=0&limit=100`: browse the directory.
 - `GET /api/v1/hackathons/mnc?limit=100`: active corporate events through the Convex `by_is_mnc` index. Add `include_completed=true` for historical rows.
@@ -57,6 +71,12 @@ The Devpost PNG was rasterized from the official Devpost mobile SVG referenced b
 
 ## Validation
 
+All scrape, task-status, update and delete routes require `Authorization: Bearer <SCRAPER_API_TOKEN>`. An existing `SCRAPER_SYNC_TOKEN` is accepted as the fallback service credential. Missing credentials fail closed. Public hackathon reads remain available. Direct legacy Convex create/update/remove functions also require that server-only token; bulk deletion is internal. These legacy function changes must be applied only to a separate scraper deployment, never over the frontend's schema.
+
+Scrape destinations default to the nine registered platform domains. Custom pages require an operator-configured `SCRAPER_ALLOWED_HOSTS` entry. Requests and redirects reject private/reserved DNS addresses; rendered fallback requests enforce the same trusted-host rules and block service workers. Some external CDN scripts may therefore need an explicitly trusted hostname before rendered fallback works. Fixed provider APIs do not follow redirects. Keep network egress restrictions in place for production as additional protection against DNS rebinding. `CORS_ALLOWED_ORIGINS` sets a comma-separated origin allowlist; wildcard credentialed CORS was removed.
+
+The September 30 update synced the frontend development deployment. No production deployment or production database change was made.
+
 From this directory:
 
 ```sh
@@ -65,4 +85,13 @@ python -m unittest discover -s tests -v
 
 The suite covers provider mappings, timezone conversions, prize units, company boundaries, URL handling, JSON-LD graphs, current and legacy MLH data, Commudle cursors, malformed/empty feeds, detail selection, database serialization, and cache invalidation. Tests use fixtures and mocks and do not access live databases or Redis.
 
-Frontend validation: `npm run build`, TypeScript, and ESLint on the changed directory components. The scraper Convex TypeScript was checked using the frontend's installed Convex/TypeScript packages. No Convex deployment or production database writes were performed during implementation.
+Frontend validation: `npm run build`, TypeScript, and ESLint on changed components. The scraper Convex TypeScript was checked using the frontend's installed Convex/TypeScript packages. Development synchronization is described above; no production deployment or production database writes were performed.
+
+## Production deployment and optional operations
+
+Use the [production guide](../docs/PRODUCTION_SETUP.md) for the scheduled Docker/
+Kubernetes ingestion job, secret management, Sentry, optional Kafka, and recovery.
+`requirements-ops.txt` adds optional operational dependencies. Generate a reviewed
+Python 3.12 lock file before production. The Kafka consumer runs with
+`python scripts/kafka_to_frontend.py`; the producer uses
+`python scripts/sync_to_frontend.py --transport kafka`. The default remains HTTP.

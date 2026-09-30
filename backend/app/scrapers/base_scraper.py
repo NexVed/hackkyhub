@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any
-import requests
+from app.security import ScraperSession, require_public_destination
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 import logging
@@ -13,7 +13,8 @@ class BaseScraper(ABC):
     
     def __init__(self, headless: bool = True):
         self.headless = headless
-        self.session = requests.Session()
+        self.session = ScraperSession()
+        self.session.trust_env = False
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
@@ -33,9 +34,18 @@ class BaseScraper(ABC):
     def get_rendered_content(self, url: str) -> Optional[str]:
         """Get rendered HTML of a JavaScript-dependent page using Playwright"""
         try:
+            require_public_destination(url)
             with sync_playwright() as p:
                 browser = p.chromium.launch(headless=self.headless)
-                page = browser.new_page()
+                context = browser.new_context(service_workers="block")
+                page = context.new_page()
+                def guard(route):
+                    try:
+                        require_public_destination(route.request.url)
+                        route.continue_()
+                    except (ValueError, OSError):
+                        route.abort()
+                context.route("**/*", guard)
                 page.goto(url, wait_until='networkidle', timeout=30000)
                 html = page.content()
                 browser.close()

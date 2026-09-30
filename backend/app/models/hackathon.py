@@ -87,7 +87,7 @@ class HackathonInDB(HackathonBase):
 
 class ScrapeRequest(BaseModel):
     """Request schema for scraping"""
-    urls: List[str]
+    urls: List[str] = Field(..., min_length=1, max_length=20)
     force_refresh: bool = False
 
 

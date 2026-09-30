@@ -33,12 +33,31 @@ http.route({
     }
 
     try {
-      const body = await request.json();
+      // Bound the streaming body too: Content-Length can be absent or forged.
+      const reader = request.body?.getReader();
+      const chunks: Uint8Array[] = [];
+      let size = 0;
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          size += value.byteLength;
+          if (size > 2_000_000) {
+            await reader.cancel();
+            return new Response(JSON.stringify({ error: "Payload too large" }), { status: 413, headers: { "Content-Type": "application/json" } });
+          }
+          chunks.push(value);
+        }
+      }
+      const bytes = new Uint8Array(size);
+      let offset = 0;
+      for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+      const body: unknown = JSON.parse(new TextDecoder().decode(bytes));
 
-      if (!Array.isArray(body.hackathons)) {
+      if (!body || typeof body !== "object" || !("hackathons" in body) || !Array.isArray(body.hackathons) || body.hackathons.length > 1000) {
         return new Response(
           JSON.stringify({
-            error: "hackathons must be an array",
+            error: "hackathons must be an array of at most 1000 records",
           }),
           {
             status: 400,

@@ -70,7 +70,7 @@ class DevnovateScraper(BaseScraper):
                 "Accept": "application/json",
                 "Referer": "https://devnovate.co/events",
             }
-            resp = http_requests.get(DEVNOVATE_API_URL, headers=headers, timeout=15)
+            resp = http_requests.get(DEVNOVATE_API_URL, headers=headers, timeout=15, allow_redirects=False)
             resp.raise_for_status()
             result = resp.json()
             # API returns a flat list of events

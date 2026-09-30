@@ -1,7 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
-import Lenis from "lenis";
+import React, { createContext, useContext, useEffect, useRef } from "react";
+import Lenis, { type ScrollToOptions } from "lenis";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -11,12 +11,10 @@ if (typeof window !== "undefined") {
 }
 
 interface SmoothScrollContextValue {
-  lenis: Lenis | null;
-  scrollTo: (target: string | number | HTMLElement, options?: any) => void;
+  scrollTo: (target: string | number | HTMLElement, options?: ScrollToOptions) => void;
 }
 
 const SmoothScrollContext = createContext<SmoothScrollContextValue>({
-  lenis: null,
   scrollTo: () => {},
 });
 
@@ -27,7 +25,7 @@ export function SmoothScrollProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [lenisInstance, setLenisInstance] = useState<Lenis | null>(null);
+  const lenisRef = useRef<Lenis | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -51,7 +49,7 @@ export function SmoothScrollProvider({
       infinite: false,
     });
 
-    setLenisInstance(lenis);
+    lenisRef.current = lenis;
 
     // Synchronize Lenis with GSAP ScrollTrigger
     lenis.on("scroll", ScrollTrigger.update);
@@ -72,15 +70,16 @@ export function SmoothScrollProvider({
       clearTimeout(refreshTimeout);
       gsap.ticker.remove(updateTicker);
       lenis.destroy();
+      lenisRef.current = null;
     };
   }, []);
 
   const scrollTo = (
     target: string | number | HTMLElement,
-    options?: any
+    options?: ScrollToOptions
   ) => {
-    if (lenisInstance) {
-      lenisInstance.scrollTo(target, {
+    if (lenisRef.current) {
+      lenisRef.current.scrollTo(target, {
         duration: 1.4,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         ...options,
@@ -98,7 +97,7 @@ export function SmoothScrollProvider({
   };
 
   return (
-    <SmoothScrollContext.Provider value={{ lenis: lenisInstance, scrollTo }}>
+    <SmoothScrollContext.Provider value={{ scrollTo }}>
       {children}
     </SmoothScrollContext.Provider>
   );

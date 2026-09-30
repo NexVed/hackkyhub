@@ -1,0 +1,30 @@
+name: hackkyhub
+services:
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_CONVEX_URL: ${NEXT_PUBLIC_CONVEX_URL:?Set the public Convex URL}
+    ports: ["127.0.0.1:3000:3000"]
+    env_file: ./.secrets/frontend.env
+    restart: unless-stopped
+    read_only: true
+    tmpfs: ["/tmp", "/app/.next/cache:uid=10001,gid=10001"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+  ingest:
+    profiles: ["jobs"]
+    build:
+      context: ./backend
+      args: { INSTALL_BROWSER: "true" }
+    env_file: ./.secrets/scraper.env
+    read_only: true
+    tmpfs: ["/tmp:uid=10001,gid=10001"]
+    shm_size: 256mb
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]

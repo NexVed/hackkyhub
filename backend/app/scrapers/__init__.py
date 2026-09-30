@@ -41,7 +41,7 @@ PLATFORM_URLS = [
     "https://devfolio.co/hackathons",
     "https://www.hackerearth.com/challenges/hackathon/",
     "https://www.commudle.com/explore/hackathons",
-    "https://hackculture.com/events",
+    "https://hackculture.io/programs",
 ]
 
 
